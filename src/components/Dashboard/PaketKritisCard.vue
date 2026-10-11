@@ -1,5 +1,19 @@
 <script setup>
 const props = defineProps({ data: Array })
+const getStatusBadgeClass = (status) => {
+    if (!status) return 'px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-md text-[10px] font-bold';
+    const s = String(status).toLowerCase();
+    if (s.includes('kritis')) {
+        return 'px-2.5 py-1 bg-red-100 text-red-700 rounded-md text-[10px] font-bold';
+    }
+    if (s.includes('aman')) {
+        return 'px-2.5 py-1 bg-blue-100 text-blue-700 rounded-md text-[10px] font-bold';
+    }
+    if (s.includes('perhatian')) {
+        return 'px-2.5 py-1 bg-yellow-100 text-yellow-700 rounded-md text-[10px] font-bold';
+    }
+    return 'px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-md text-[10px] font-bold';
+};
 </script>
 <template>
     <div
@@ -22,7 +36,7 @@ const props = defineProps({ data: Array })
                 <div class="flex justify-between items-center mb-1">
                     <p class="text-[10px] font-bold text-slate-400">{{ paket.tglLaporan }} <span class="mx-1">•</span>
                         {{ paket.kodePaket }}</p>
-                    <span class="px-2 py-0.5 bg-red-100 text-red-600 rounded-md text-[10px] font-bold">{{ paket.status
+                    <span :class="getStatusBadgeClass(paket.status)">{{ paket.status
                         }}</span>
                 </div>
                 <p class="text-sm font-semibold text-slate-700 leading-snug">{{ paket.keterangan }}.</p>
