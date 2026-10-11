@@ -877,11 +877,11 @@ watch(
                     <table class="w-full text-left border-collapse">
                         <thead class="sticky top-0 z-20 bg-white">
                             <tr class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                <th class="px-4 py-4 rounded-tl-xl">Jenis Pekerjaan</th>
-                                <th class="px-4 py-4">Nilai Pagu</th>
-                                <th class="px-4 py-4 ">Nilai Kontrak</th>
-                                <th class="px-4 py-4 ">Progress Fisik</th>
-                                <th class="px-4 py-4 ">Progress Keuangan</th>
+                                <th class="px-4 py-4 text-center rounded-tl-xl">SUB PROGRAM KEGIATAN</th>
+                                <th class="px-4 py-4 text-center">Nilai Pagu</th>
+                                <th class="px-4 py-4 text-center ">Nilai Kontrak</th>
+                                <th class="px-4 py-4 text-center ">Progress Fisik</th>
+                                <th class="px-4 py-4 text-center ">Progress Keuangan</th>
                             </tr>
                         </thead>
                         <tbody class="text-sm overflow-y-auto">
@@ -907,20 +907,20 @@ watch(
                             <tr v-for="data in dashboardData.summaryJenisPekerjaan"
                                 class="hover:bg-slate-50/50 transition-colors border-b border-slate-50/70 group">
                                 <!-- <RouterLink :to="'/paket/detail'"> -->
-                                <td class="px-4 py-5">
-                                    <p class=" font-bold text-blue-950 mb-0.5">{{ data.jenisPekerjaan
+                                <td class="text-left px-4 py-5">
+                                    <p class="font-bold text-blue-950 mb-0.5 line-clamp-2">{{ data.jenisPekerjaan
                                         }}</p>
                                 </td>
-                                <td class="px-4 py-5 font-bold text-blue-950 text-nowrap">{{
+                                <td class="text-center px-4 py-5 font-bold text-blue-950 text-nowrap">{{
                                     formatRupiah(data.akumulasiPagu)
                                 }}</td>
-                                <td class="px-4 py-5 font-bold text-blue-950 text-nowrap">{{
+                                <td class="text-center px-4 py-5 font-bold text-blue-950 text-nowrap">{{
                                     formatRupiah(data.akumulasiKontrak) }}</td>
 
-                                <td class="px-4 py-5 font-bold text-blue-950">
+                                <td class="text-center px-4 py-5 font-bold text-blue-950">
                                     {{ data.persenFisik }} %
                                 </td>
-                                <td class="px-4 py-5 font-bold text-blue-950">
+                                <td class="text-center px-4 py-5 font-bold text-blue-950">
                                     {{ data.persenKeuangan }} %
 
                                 </td>
