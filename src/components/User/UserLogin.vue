@@ -44,7 +44,7 @@ async function login() {
             <p class="text-slate-500 mt-1">Sistem Monitoring MANTAP BM</p>
         </div> -->
         <div class="sm:mx-auto sm:w-full sm:max-w-md p-10">
-            <img class="mx-auto h-10 w-auto" src="https://www.svgrepo.com/show/301692/login.svg" alt="Workflow">
+            <img class="mx-auto md:h-10 xl:h-30 w-auto" src="../../assets/images/LOGO MANTAP BM REVISI 6 WAHYU.png" alt="Workflow">
             <h2 class="mt-6 text-center text-3xl leading-9 font-extrabold text-gray-900">
                 MANTAP BM
             </h2>
