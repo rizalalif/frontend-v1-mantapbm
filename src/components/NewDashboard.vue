@@ -7,7 +7,7 @@ import 'leaflet/dist/leaflet.css';
 import Chart from 'chart.js/auto';
 import { useAuth } from '@/lib/Auth';
 import CardTop from './Dashboard/CardTop.vue';
-import api from '@/services/api';
+import api, { BASE_URL } from '@/services/api';
 import PaketKritisCard from './Dashboard/PaketKritisCard.vue';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { formatRupiah } from '@/lib/Helper.js';
@@ -958,10 +958,9 @@ watch(
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <!-- Image 1 -->
                 <div v-for="value in dashboardData.dokumentasiTerbaru"
-                    :class="`h-44 bg-[url('http://100.114.142.21:3002/images/${value.fileName}')]`"
+                    :class="`h-44 bg-[url('${BASE_URL}/images/${value.fileName}')]`"
                     class="bg-cover bg-center rounded-2xl relative overflow-hidden group hover:shadow-lg transition-all duration-300">
-                    <img :src="`http://100.114.142.21:3002/images/${value.fileName}`" alt=""
-                        class="w-full h-full object-cover">
+                    <img :src="`${BASE_URL}/images/${value.fileName}`" alt="" class="w-full h-full object-cover">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-90">
                     </div>
                     <div class="absolute bottom-4 left-4 right-4">

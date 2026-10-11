@@ -50,6 +50,7 @@
 </template>
 
 <script setup>
+import { BASE_URL } from '@/services/api';
 import Plus from '@primeicons/vue/plus';
 import Times from '@primeicons/vue/times';
 import Upload from '@primeicons/vue/upload';
@@ -102,7 +103,7 @@ const formatSize = (bytes) => {
 watch(() => props.existingUrl, (newValue) => {
     console.log("newValue", props.existingUrl);
     if (newValue) {
-        path.value = "http://100.114.142.21:3002/images/progress-fisik/" + props.modelValue;
+        path.value = BASE_URL + "/images/progress-fisik/" + props.modelValue;
     } else {
         path.value = "";
     }
