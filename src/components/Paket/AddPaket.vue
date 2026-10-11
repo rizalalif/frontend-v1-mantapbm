@@ -79,16 +79,24 @@ const tahunOptions = ref([
 ]);
 const jenisPekerjaanOptions = ref([
     {
-        label: 'Peningkatan Jalan',
-        value: 'Peningkatan Jalan'
+        label: 'Pengawasan Penyelenggaran Jalan Kewenangan Provinsi',
+        value: 'Pengawasan Penyelenggaran Jalan Kewenangan Provinsi'
     },
     {
-        label: 'Pembangunan Jembatan',
-        value: 'Pembangunan Jembatan'
+        label: '⁠Rekonstruksi Jalan',
+        value: '⁠Rekonstruksi Jalan'
     },
     {
-        label: 'Rehabilitasi Irigasi',
-        value: 'Rehabilitasi Irigasi'
+        label: 'Penyusunan Rencana, Kebijakan, Strategi dan Teknis Pengembangan Jaringan Jalan serta Perencanaan Teknis Penyelenggaraan Jalan dan Jembatan',
+        value: 'Penyusunan Rencana, Kebijakan, Strategi dan Teknis Pengembangan Jaringan Jalan serta Perencanaan Teknis Penyelenggaraan Jalan dan Jembatan'
+    },
+    {
+        label: 'Pembangunan Jalan',
+        value: 'Pembangunan Jalan'
+    },
+    {
+        label: 'Survey Kondisi Jalan/Jembatan',
+        value: 'Survey Kondisi Jalan/Jembatan'
     }
 ]);
 const sumberDanaOptions = ref([{ label: 'APBN', value: "APBN" }, { label: 'APBD', value: "APBD" }, { label: 'BLUD', value: "BLUD" }]);
@@ -614,13 +622,9 @@ onMounted(() => {
                     <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Jenis
                         Pekerjaan </label>
 
-                    <Select v-model="paket.jenisPekerjaan" :options="jenisPekerjaanOptions" optionLabel="label"
-                        optionValue="value" placeholder="Pilih Jenis Pekerjaan..."
-                        filterPlaceholder="Cari Nama Pekerjaan..." :pt="{
-                            root: 'w-full !bg-slate-50 !rounded-xl !px-2 !py-1.5 !border-none !shadow-none focus:!ring-2 focus:!ring-orange-500 focus:!outline-none cursor-pointer',
-                            label: '!text-sm !font-bold !text-blue-950',
-                            item: { class: '!text-sm !font-semibold !text-blue-950' }
-                        }" />
+                    <input type="text" placeholder="Contoh: Pembangunan Jalan Provinsi"
+                        v-model="paket.subProgramKegiatan"
+                        class="w-full bg-slate-50 text-sm font-semibold text-blue-950 rounded-xl px-4 py-3.5 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none placeholder-slate-300">
                 </div>
 
                 <div>
@@ -634,9 +638,14 @@ onMounted(() => {
                 <div>
                     <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Sub
                         Program Kegiatan</label>
-                    <input type="text" placeholder="Contoh: Pembangunan Jalan Provinsi"
-                        v-model="paket.subProgramKegiatan"
-                        class="w-full bg-slate-50 text-sm font-semibold text-blue-950 rounded-xl px-4 py-3.5 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none placeholder-slate-300">
+                    <Select v-model="paket.jenisPekerjaan" :options="jenisPekerjaanOptions" optionLabel="label"
+                        optionValue="value" placeholder="Pilih Jenis Pekerjaan..."
+                        filterPlaceholder="Cari Nama Pekerjaan..." :pt="{
+                            root: 'w-full !bg-slate-50 !rounded-xl !px-2 !py-1.5 !border-none !shadow-none focus:!ring-2 focus:!ring-orange-500 focus:!outline-none cursor-pointer',
+                            label: '!text-sm !font-bold !text-blue-950',
+                            item: { class: '!text-sm !font-semibold !text-blue-950' }
+                        }" />
+
                 </div>
                 <div>
                     <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">

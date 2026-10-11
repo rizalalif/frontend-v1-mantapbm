@@ -607,7 +607,7 @@ onMounted(() => {
 
 
                 <!-- KOLOM NAMA PAKET -->
-                <Column field="name" header="Nama Paket " style="min-width: 300px;" :pt="{
+                <Column field="name" header="Nama Paket " style="min-width: 300px;min-width: 300px;" :pt="{
                     columnHeaderContent: {
                         class: 'p-0! justify-center! text-center'
                     }, columnTitle: {
@@ -724,7 +724,8 @@ onMounted(() => {
                         <!-- Kolom 1 (Sejajar Nama Paket) -->
                         <!-- 1. Ganti % dengan px. Misal lebar kolom Nama Paket di tabel Anda adalah 350px -->
                         <!-- 2. Tambahkan bg-slate-50 sticky left-0 z-10 agar menempel saat di-scroll ke kanan -->
-                        <div style="min-width: 250px;" class="flex items-center justify-between py-2 pr-4">
+                        <div style="min-width: 250px !important; max-width: 250px !important;"
+                            class="flex items-center justify-between py-2 pr-4">
                             <span
                                 class="font-bold text-blue-950 text-xs lg:text-sm uppercase tracking-wide whitespace-normal line-clamp-2 leading-snug">
                                 {{ slotProps.data.jenisPekerjaan }}

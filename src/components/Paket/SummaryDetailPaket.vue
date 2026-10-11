@@ -76,7 +76,7 @@
                 <h2 class="text-base font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Peta</h2>
                 <div class="flex-1 bg-slate-200 rounded-lg overflow-hidden relative min-h-[250px]">
                     <div id="map"
-                        class="flex-1 rounded border border-gray-200 overflow-hidden relative min-h-[12rem] z-0">
+                        class="flex-1 rounded border border-gray-200 overflow-hidden relative w-full h-full z-0">
                     </div>
                 </div>
             </div>
@@ -131,7 +131,7 @@
                             <div class="flex justify-between text-xs mb-1">
                                 <span class="text-slate-500 font-medium">Realisasi Aktual</span>
                                 <span class="font-bold text-emerald-600">{{ statusProgressFisik.actualPercentage
-                                }}%</span>
+                                    }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
                                 <div class="h-2 rounded-full transition-all"
@@ -145,7 +145,8 @@
                         <div class="pt-2 border-t border-slate-100 flex justify-between items-center">
                             <span class="text-xs font-medium text-slate-500">Deviasi</span>
                             <span
-                                class="bg-red-50 text-red-600 font-bold px-3 py-1 rounded-lg text-sm border border-red-100">
+                                :class="statusProgressFisik.deviationFisik > 0 ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'"
+                                class="font-bold px-3 py-1 rounded-lg text-sm">
                                 {{ statusProgressFisik.deviationFisik || 0 }}%
                             </span>
                         </div>
@@ -163,7 +164,7 @@
                             <div class="flex justify-between text-xs mb-1">
                                 <span class="text-slate-500 font-medium">Target Rencana</span>
                                 <span class="font-bold text-slate-700">{{ statusProgressKeuangan.planPercentage
-                                }}%</span>
+                                    }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
                                 <div class="bg-blue-400 h-2 rounded-full"
@@ -177,7 +178,7 @@
                             <div class="flex justify-between text-xs mb-1">
                                 <span class="text-slate-500 font-medium">Realisasi Aktual</span>
                                 <span class="font-bold text-emerald-600">{{ statusProgressKeuangan.actualPercentage
-                                }}%</span>
+                                    }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
                                 <div class="h-2 rounded-full transition-all"
@@ -335,7 +336,7 @@
 </template>
 
 <script setup>
-import api from '@/services/api';
+import api, { BASE_URL } from '@/services/api';
 import { computed, ref, watch, nextTick, onMounted } from 'vue';
 import Chart from 'chart.js/auto';
 import { useAuth } from '@/lib/Auth';
@@ -355,7 +356,7 @@ const props = defineProps({
     }
 });
 
-const backendUrl = ref('http://100.114.142.21:3002/images/progress-fisik/');
+const backendUrl = ref(`${BASE_URL}/images/progress-fisik/`);
 let mapInstance = null;
 const emit = defineEmits(['refresh']);
 const auth = useAuth();
@@ -473,7 +474,11 @@ const loadKurvaUang = async () => {
                         borderColor: '#22c55e',
                         backgroundColor: '#22c55e',
                         tension: 0.4,
-                        borderWidth: 2
+                        borderWidth: 2,
+                        datalabels: {
+                            anchor: 'end', // Place at the top of the data point
+                            align: 'top'   // Align text above the anchor
+                        }
                     },
                     {
                         label: 'Keuangan (%)',
@@ -481,7 +486,11 @@ const loadKurvaUang = async () => {
                         borderColor: '#f97316',
                         backgroundColor: '#f97316',
                         tension: 0.4,
-                        borderWidth: 2
+                        borderWidth: 2,
+                        datalabels: {
+                            anchor: 'start', // Place at the bottom of the data point
+                            align: 'bottom'  // Align text below the anchor
+                        }
                     }
                 ]
             },
@@ -495,8 +504,8 @@ const loadKurvaUang = async () => {
                 plugins: {
                     datalabels: {
                         display: true,              // Tampilkan label
-                        align: 'top',               // Posisikan tulisan di atas titik
-                        anchor: 'end',              // Tumpuan ada di ujung titik
+                        // align: 'top',               // Posisikan tulisan di atas titik
+                        // anchor: 'end',              // Tumpuan ada di ujung titik
                         offset: 6,                  // Jarak tulisan dari titik (px)
                         color: '#0f172a',           // Warna tulisan (slate-900)
                         font: {

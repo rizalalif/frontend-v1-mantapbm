@@ -155,8 +155,8 @@ const submitForm = async () => {
         }
 
         const url = isUpdate
-            ? `http://100.114.142.21:3002/api/v1/progress-keuangan/${editingId.value}`
-            : `http://100.114.142.21:3002/api/v1/progress-keuangan`;
+            ? `/progress-keuangan/${editingId.value}`
+            : `/progress-keuangan`;
 
         console.log(`Submitting progress keuangan (${isUpdate ? 'PUT' : 'POST'}) 🚀:`, payloadToSend);
 

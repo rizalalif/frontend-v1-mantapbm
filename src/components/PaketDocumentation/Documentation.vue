@@ -132,7 +132,7 @@
 <script setup>
 import { onMounted, ref, watch } from 'vue';
 import DropzoneDokumentasi from './DropzoneDokumentasi.vue';
-import api from '@/services/api';
+import api, { BASE_URL } from '@/services/api';
 import { useAuth } from '@/lib/Auth.js';
 import { Toast, useToast } from 'primevue';
 
@@ -155,7 +155,7 @@ const dokumentasiList = ref([]);
 // State Modal Lightbox
 const isModalOpen = ref(false);
 const selectedItem = ref(null);
-const backendUrl = ref('http://100.114.142.21:3002/images/');
+const backendUrl = ref(`${BASE_URL}/images/`);
 
 const showAlert = (severity, status, message) => {
 

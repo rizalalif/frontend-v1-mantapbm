@@ -312,11 +312,7 @@ const formatRupiah = (val) => {
 
 const deletePaket = async (id) => {
     try {
-        const response = await axios.delete(`http://100.114.142.21:3002/api/v1/paket/${id}`, {
-            headers: {
-                Authorization: `Bearer ${auth.state.token || localStorage.getItem('token')}`
-            }
-        });
+        const response = await api.delete(`/paket/${id}`);
         // console.log("Delete paket success 🚀:", response.data);
         await getPaket();
         // emit('refresh');

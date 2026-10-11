@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch } from "vue";
-import api from '@/services/api';
+import api, { API_BASE_URL, BASE_URL } from '@/services/api';
 import { useAuth } from "@/lib/Auth";
 import { getChangedPayload, listOfMonths } from "@/lib/Helper";
 import ImageUpload from "./ImageUpload.vue";
@@ -38,7 +38,7 @@ const existingFotos = ref({
     fotoStreetMap: null,
     fotoDokumentasi: null
 });
-const BASE_IMAGE_URL = 'http://100.114.142.21:3002/images/progress-fisik/';
+const BASE_IMAGE_URL = `${BASE_URL}/images/progress-fisik/`;
 const monthName = ref(listOfMonths);
 const isEditMode = computed(() => !!editingId.value);
 const lastProgressId = computed(() => props.paket.progressFisiks.length > 0 ? props.paket.progressFisiks[props.paket.progressFisiks.length - 1].id : null);
@@ -247,8 +247,8 @@ const submitForm = async () => {
         }
 
         const url = isUpdate
-            ? `http://100.114.142.21:3002/api/v1/progress-fisik/${editingId.value}`
-            : `http://100.114.142.21:3002/api/v1/progress-fisik`;
+            ? `/progress-fisik/${editingId.value}`
+            : `/progress-fisik`;
 
         console.log(`Submitting progress fisik (${isUpdate ? 'PUT' : 'POST'}) 🚀:`, payloadToSend);
 
