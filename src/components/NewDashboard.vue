@@ -7,7 +7,7 @@ import 'leaflet/dist/leaflet.css';
 import Chart from 'chart.js/auto';
 import { useAuth } from '@/lib/Auth';
 import CardTop from './Dashboard/CardTop.vue';
-import axios from 'axios';
+import api from '@/services/api';
 import PaketKritisCard from './Dashboard/PaketKritisCard.vue';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { formatRupiah } from '@/lib/Helper.js';
@@ -344,49 +344,14 @@ const fetchDashboardData = async () => {
     try {
         // Jalankan request ke berbagai endpoint secara BERSAMAAN (Paralel)
         const [totalData, paketBerjalan, paketSelesai, nilaiKontrak, paketKritis, percentageFisik, percentageKeuangan, dokumentasi] = await Promise.all([
-            await axios.get("http://100.114.142.21:3002/api/v1/dashboard/total-paket", {
-                headers: {
-                    Authorization: `Bearer ${auth.state.token || localStorage.getItem("token")}`,
-                },
-                params: {
-                    tahun: tahun
-                }
-            }),
-            await axios.get("http://100.114.142.21:3002/api/v1/dashboard/total-paket-berjalan", {
-                headers: {
-                    Authorization: `Bearer ${auth.state.token || localStorage.getItem("token")}`,
-                }, params: { tahun }
-            }),
-            await axios.get("http://100.114.142.21:3002/api/v1/dashboard/total-paket-selesai", {
-                headers: {
-                    Authorization: `Bearer ${auth.state.token || localStorage.getItem("token")}`,
-                }, params: { tahun }
-            }),
-            await axios.get("http://100.114.142.21:3002/api/v1/dashboard/total-nilai-kontrak", {
-                headers: {
-                    Authorization: `Bearer ${auth.state.token || localStorage.getItem("token")}`,
-                }, params: { tahun }
-            }),
-            await axios.get("http://100.114.142.21:3002/api/v1/dashboard/paket-kritis", {
-                headers: {
-                    Authorization: `Bearer ${auth.state.token || localStorage.getItem("token")}`,
-                }, params: { tahun }
-            }),
-            await axios.get("http://100.114.142.21:3002/api/v1/dashboard/persentase-fisik", {
-                headers: {
-                    Authorization: `Bearer ${auth.state.token || localStorage.getItem("token")}`,
-                }, params: { tahun }
-            }),
-            await axios.get("http://100.114.142.21:3002/api/v1/dashboard/persentase-keuangan", {
-                headers: {
-                    Authorization: `Bearer ${auth.state.token || localStorage.getItem("token")}`,
-                }, params: { tahun }
-            }),
-            await axios.get("http://100.114.142.21:3002/api/v1/documentation", {
-                headers: {
-                    Authorization: `Bearer ${auth.state.token || localStorage.getItem("token")}`,
-                }
-            }),
+            await api.get("/dashboard/total-paket", { params: { tahun } }),
+            await api.get("/dashboard/total-paket-berjalan", { params: { tahun } }),
+            await api.get("/dashboard/total-paket-selesai", { params: { tahun } }),
+            await api.get("/dashboard/total-nilai-kontrak", { params: { tahun } }),
+            await api.get("/dashboard/paket-kritis", { params: { tahun } }),
+            await api.get("/dashboard/persentase-fisik", { params: { tahun } }),
+            await api.get("/dashboard/persentase-keuangan", { params: { tahun } }),
+            await api.get("/documentation"),
         ]);
 
         console.log("Data total: ", totalData.data);
@@ -445,14 +410,7 @@ const loadSummaryByJenisPekerjaan = async () => {
     const tahun = route.query.tahun || new Date().getFullYear();
 
     try {
-        const response = await axios.get("http://100.114.142.21:3002/api/v1/dashboard/summary-jenis", {
-            headers: {
-                Authorization: `Bearer ${auth.state.token || localStorage.getItem("token")}`,
-            },
-            params: {
-                tahun: tahun
-            }
-        })
+        const response = await api.get("/dashboard/summary-jenis", { params: { tahun } })
         dashboardData.value.summaryJenisPekerjaan = response.data.data;
         console.log("response.data.data jenis pekerjaan", response);
     } catch (error) {
@@ -466,14 +424,7 @@ const loadChartJenisPekerjaan = async () => {
     const tahun = route.query.tahun || new Date().getFullYear();
 
     try {
-        const response = await axios.get("http://100.114.142.21:3002/api/v1/dashboard/paket-jenis", {
-            headers: {
-                Authorization: `Bearer ${auth.state.token || localStorage.getItem("token")}`,
-            },
-            params: {
-                tahun: tahun
-            }
-        })
+        const response = await api.get("/dashboard/paket-jenis", { params: { tahun } })
         if (chartKategoriInstance) {
 
             chartKategoriInstance.destroy();
@@ -510,11 +461,7 @@ const loadKurvaUang = async () => {
     console.log('loaded kurva uang');
     const tahun = route.query.tahun || new Date().getFullYear();
     try {
-        const response = await axios.get("http://100.114.142.21:3002/api/v1/dashboard/kurva-uang", {
-            headers: {
-                Authorization: `Bearer ${auth.state.token || localStorage.getItem("token")}`,
-            }, params: { tahun }
-        })
+        const response = await api.get("/dashboard/kurva-uang", { params: { tahun } })
         if (chartKeuanganInstance) {
             console.log("ada");
 
@@ -602,16 +549,8 @@ const loadKurvaFisik = async () => {
 
     try {
         const tahun = route.query.tahun || new Date().getFullYear();
-        const responseFisik = await axios.get("http://100.114.142.21:3002/api/v1/dashboard/kurva-fisik", {
-            headers: {
-                Authorization: `Bearer ${auth.state.token || localStorage.getItem("token")}`,
-            }, params: { tahun }
-        })
-        const responseUang = await axios.get("http://100.114.142.21:3002/api/v1/dashboard/kurva-uang", {
-            headers: {
-                Authorization: `Bearer ${auth.state.token || localStorage.getItem("token")}`,
-            }, params: { tahun }
-        })
+        const responseFisik = await api.get("/dashboard/kurva-fisik", { params: { tahun } })
+        const responseUang = await api.get("/dashboard/kurva-uang", { params: { tahun } })
         isEmptyFisik.value = false
         const aktualKeuangan = responseUang.data.data.aktual
         if (chartFisikInstance) {
@@ -751,12 +690,7 @@ const loadMap = async () => {
 
     const tahun = route.query.tahun || new Date().getFullYear();
     try {
-        const response = await axios.get("http://100.114.142.21:3002/api/v1/dashboard/paket-location", {
-            headers: {
-                Authorization: `Bearer ${auth.state.token || localStorage.getItem("token")}`,
-            },
-            params: { tahun }
-        });
+        const response = await api.get("/dashboard/paket-location", { params: { tahun } });
 
         const paketData = response.data.data;
 

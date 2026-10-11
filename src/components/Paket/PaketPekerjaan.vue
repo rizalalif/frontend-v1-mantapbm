@@ -1,7 +1,7 @@
 <script setup>
 import router from '@/router';
 import { computed, onMounted, ref } from 'vue';
-import axios from 'axios';
+import api from '@/services/api';
 import { useAuth } from '@/lib/Auth';
 import DeleteModal from '../utils/DeleteModal.vue';
 import { FileExcel } from '@primeicons/vue';
@@ -288,15 +288,11 @@ async function getPaket() {
         console.log("auth.userId", auth.state.user.id);
 
         if (auth.isLoggedIn) {
-            const response = await axios.get("http://100.114.142.21:3002/api/v1/paket", {
+            const response = await api.get("/paket", {
                 params: {
                     statusPaket: selectedStatus.value,
                     tahun: selectedYear.value,
                     // paketUserId: auth.userRole.value === 'user' ? auth.state.user.id : null
-                },
-                headers: {
-                    // Authorization: `Bearer ${localStorage.getItem("token")}`
-                    Authorization: `Bearer ${auth.state.token}`
                 }
             });
 
@@ -338,11 +334,7 @@ const formatRupiah = (val) => {
 
 const deletePaket = async (id) => {
     try {
-        const response = await axios.delete(`http://100.114.142.21:3002/api/v1/paket/${id}`, {
-            headers: {
-                Authorization: `Bearer ${auth.state.token || localStorage.getItem('token')}`
-            }
-        });
+        const response = await api.delete(`/paket/${id}`);
         // console.log("Delete paket success 🚀:", response.data);
         await getPaket();
         // emit('refresh');

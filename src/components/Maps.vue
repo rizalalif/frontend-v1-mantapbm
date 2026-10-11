@@ -2,7 +2,7 @@
 import { onMounted, onUnmounted, ref } from 'vue';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import axios from 'axios';
+import api from '@/services/api';
 import { useAuth } from '@/lib/Auth';
 
 let mapInstance = null;
@@ -57,12 +57,7 @@ onMounted(async () => {
                 warna: "#3b82f6"
             }
         ];
-        const response = await axios.get("http://100.114.142.21:3002/api/v1/dashboard/paket-location", {
-            headers: {
-                Authorization: `Bearer ${auth.state.token || localStorage.getItem("token")}`,
-            },
-            params: { tahun: 2026 }
-        });
+        const response = await api.get("/dashboard/paket-location", { params: { tahun: 2026 } });
 
         const paketData = response.data.data;
 
@@ -148,12 +143,7 @@ const loadMap = async () => {
 
     const tahun = route.query.tahun || new Date().getFullYear();
     try {
-        const response = await axios.get("http://100.114.142.21:3002/api/v1/dashboard/paket-location", {
-            headers: {
-                Authorization: `Bearer ${auth.state.token || localStorage.getItem("token")}`,
-            },
-            params: { tahun }
-        });
+        const response = await api.get("/dashboard/paket-location", { params: { tahun } });
 
         const paketData = response.data.data;
 

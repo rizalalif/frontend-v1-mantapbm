@@ -139,7 +139,7 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue';
-import axios from 'axios';
+import api from '@/services/api';
 import { useAuth } from '@/lib/Auth';
 import DeleteModal from '@/components/utils/DeleteModal.vue';
 import ProgressFisikModal from './ProgressFisikModal.vue';
@@ -296,11 +296,7 @@ const getProgress = (data) => {
 
 const deleteProgress = async (id) => {
     try {
-        const response = await axios.delete(`http://100.114.142.21:3002/api/v1/progress-fisik/${id}`, {
-            headers: {
-                Authorization: `Bearer ${auth.state.token || localStorage.getItem('token')}`
-            }
-        });
+        const response = await api.delete(`/progress-fisik/${id}`);
         console.log("Delete progress success 🚀:", response.data);
         emit('refresh');
     } catch (error) {

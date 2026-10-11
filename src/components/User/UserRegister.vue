@@ -1,6 +1,6 @@
 <script setup>
 import { useAuth } from '@/lib/Auth';
-import axios from 'axios';
+import api from '@/services/api';
 import { jwtDecode } from 'jwt-decode';
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -43,7 +43,7 @@ async function register(params) {
             role: user.role
         }
 
-        const response = await axios.post("http://100.114.142.21:3002/api/v1/users/register", payload);
+        const response = await api.post("/users/register", payload);
         console.log("responsed ata 🚀🚀🚀🚀", response.data);
 
     } catch (error) {

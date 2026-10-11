@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch } from "vue";
-import axios from "axios";
+import api from '@/services/api';
 import { useAuth } from "@/lib/Auth";
 import { getChangedPayload, listOfMonths } from "@/lib/Helper";
 
@@ -161,8 +161,8 @@ const submitForm = async () => {
         console.log(`Submitting progress keuangan (${isUpdate ? 'PUT' : 'POST'}) 🚀:`, payloadToSend);
 
         const response = isUpdate
-            ? await axios.put(url, payloadToSend, { headers: { Authorization: `Bearer ${auth.state.token || localStorage.getItem("token")}` } })
-            : await axios.post(url, payloadToSend, { headers: { Authorization: `Bearer ${auth.state.token || localStorage.getItem("token")}` } });
+            ? await api.put(url, payloadToSend)
+            : await api.post(url, payloadToSend);
 
         console.log("Progress Keuangan berhasil disimpan 🚀:", response.data);
         modalVisible.value = false;

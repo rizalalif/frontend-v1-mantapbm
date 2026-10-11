@@ -1,6 +1,6 @@
 // src/store/auth.js
 import { reactive, computed } from 'vue';
-import axios from 'axios';
+import api from '@/services/api';
 
 // Helper untuk membaca localStorage dengan aman
 const getStorageItem = (key) => {
@@ -28,7 +28,7 @@ export const useAuth = () => {
 
     // Actions
     const login = async (kredensial) => {
-        const response = await axios.post('http://100.114.142.21:3002/api/v1/users/login', kredensial);
+        const response = await api.post('/users/login', kredensial);
         console.log("Response login:", response.data);
 
         const resBody = response.data;
@@ -52,8 +52,6 @@ export const useAuth = () => {
         } else {
             localStorage.removeItem('user');
         }
-
-        axios.defaults.headers.common['Authorization'] = `Bearer ${state.token}`;
     };
 
     const logout = () => {
@@ -61,7 +59,6 @@ export const useAuth = () => {
         state.token = null;
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        delete axios.defaults.headers.common['Authorization'];
     };
 
     // Ekspos yang diperlukan saja

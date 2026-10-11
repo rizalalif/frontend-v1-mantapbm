@@ -1,6 +1,5 @@
 <script setup>
 import { useAuth } from '@/lib/Auth';
-import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';

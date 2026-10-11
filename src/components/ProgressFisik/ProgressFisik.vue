@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
 import { useAuth } from '@/lib/Auth.js';
-import axios from 'axios';
+import api from '@/services/api';
 import ProgressFisikTable from '../ProgressFisik/ProgressFisikTable.vue';
 import { generateExcel } from '@/lib/Helper.js';
 import { useToast } from 'primevue';
@@ -74,11 +74,7 @@ async function getDetailProgressFisik() {
         isLoading.value = true;
         error.value = false;
         if (auth.isLoggedIn) {
-            const response = await axios.get(`http://100.114.142.21:3002/api/v1/progress-fisik`, {
-                headers: {
-                    // Authorization: `Bearer ${localStorage.getItem("token")}`
-                    Authorization: `Bearer ${auth.state.token}`
-                },
+            const response = await api.get('/progress-fisik', {
                 params: {
                     status: selectedStatus.value,
                     month: selectedMonth.value,

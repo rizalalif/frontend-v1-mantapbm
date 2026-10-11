@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onBeforeMount, onMounted, ref, watch } from 'vue';
-import axios from 'axios';
+import api from '@/services/api';
 import { useAuth } from '@/lib/Auth';
 import AddPaket from './AddPaket.vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -70,12 +70,7 @@ async function getDetailPaket() {
         isLoading.value = true;
         error.value = false;
         if (auth.isLoggedIn) {
-            const response = await axios.get(`http://100.114.142.21:3002/api/v1/paket/kode/${props.kodePaket}`, {
-                headers: {
-                    // Authorization: `Bearer ${localStorage.getItem("token")}`
-                    Authorization: `Bearer ${auth.state.token}`
-                }
-            });
+            const response = await api.get(`/paket/kode/${props.kodePaket}`);
 
             console.log("data paket 🚀🚀", response);
             const data = response.data.data;

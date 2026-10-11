@@ -2,7 +2,7 @@
 import { useAuth } from '@/lib/Auth';
 import { getChangedPayload } from '@/lib/Helper';
 // import router from '@/router';
-import axios from 'axios';
+import api from '@/services/api';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
@@ -148,11 +148,7 @@ const searchPic = (event) => {
 };
 const getPic = async () => {
     try {
-        const response = await axios.get("http://100.114.142.21:3002/api/v1/users", {
-            headers: {
-                Authorization: `Bearer ${auth.state.token || localStorage.getItem("token")}`,
-            },
-        });
+        const response = await api.get('/users');
         const rawUsers = response.data.data?.users || response.data.users || response.data.data || response.data || [];
         if (auth.userRole.value == 'admin') {
             picOptions.value = (Array.isArray(rawUsers) ? rawUsers : []).map((u) => ({
@@ -350,11 +346,7 @@ const handleSubmitAdd = async () => {
     try {
 
         delete paket.nextInputFisik;
-        const response = await axios.post("http://100.114.142.21:3002/api/v1/paket", paket, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-        });
+        const response = await api.post('/paket', paket);
         //delete nextInput Before add data paket 
         console.log("responsed ata 🚀🚀🚀🚀", response.data);
         router.push({ name: 'paket-detail', params: { kodePaket: response.data.data.kodePaket } })
@@ -379,11 +371,7 @@ const handleSubmitUpdate = async () => {
 
 
     try {
-        const response = await axios.put(`http://100.114.142.21:3002/api/v1/paket/${props.paket.id}`, payload, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-        });
+        const response = await api.put(`/paket/${props.paket.id}`, payload);
         console.log("responsed ata 🚀🚀🚀🚀", response.data.message);
 
 

@@ -179,7 +179,7 @@ const formatSize = (bytes) => {
 
 <script setup>
 import { reactive, ref } from 'vue';
-import axios from 'axios';
+import api from '@/services/api';
 import { useAuth } from '@/lib/Auth';
 
 
@@ -320,8 +320,8 @@ const uploadFiles = async () => {
 
 
     try {
-        await axios.post(`http://100.114.142.21:3002/api/v1/documentation`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data', "Authorization": "Bearer " + auth.state.token }
+        await api.post('/documentation', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
         });
 
         // alert('Dokumentasi berhasil diunggah!');

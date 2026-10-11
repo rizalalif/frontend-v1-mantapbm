@@ -335,7 +335,7 @@
 </template>
 
 <script setup>
-import axios from 'axios';
+import api from '@/services/api';
 import { computed, ref, watch, nextTick, onMounted } from 'vue';
 import Chart from 'chart.js/auto';
 import { useAuth } from '@/lib/Auth';
@@ -453,12 +453,7 @@ const loadKurvaUang = async () => {
     console.log("paket id", props.paket?.id);
 
     try {
-        const token = auth.state?.token || localStorage.getItem("token");
-        const response = await axios.get(`http://100.114.142.21:3002/api/v1/dashboard-paket/${props.paket?.id}/data-kurva`, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            }
-        });
+        const response = await api.get(`/dashboard-paket/${props.paket?.id}/data-kurva`);
 
         if (chartKeuanganInstance) {
             chartKeuanganInstance.destroy();
@@ -596,11 +591,7 @@ const detailPaket = ref(null);
 // Fungsi memanggil API
 const fetchDetailPaket = async () => {
     try {
-        const response = await axios.get(`http://100.114.142.21:3002/api/v1/paket/kode/${paketId.value}`, {
-            headers: {
-                Authorization: `Bearer ${auth.state.token}`,
-            }
-        });
+        const response = await api.get(`/paket/kode/${paketId.value}`);
         detailPaket.value = response.data.data;
 
         console.log("response.data", response.data.data);

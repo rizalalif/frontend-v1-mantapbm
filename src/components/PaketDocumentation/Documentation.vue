@@ -66,7 +66,7 @@
                         preload="metadata"></video>
                     <div class="absolute inset-0 bg-black/30 flex items-center justify-center">
                         <div class="bg-white/90 rounded-full p-3 shadow-lg">
-                            <svg class="w-8 h-8 text-blue-600 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                            <svg class="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd"
                                     d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
                                     clip-rule="evenodd"></path>
@@ -132,7 +132,7 @@
 <script setup>
 import { onMounted, ref, watch } from 'vue';
 import DropzoneDokumentasi from './DropzoneDokumentasi.vue';
-import axios from 'axios';
+import api from '@/services/api';
 import { useAuth } from '@/lib/Auth.js';
 import { Toast, useToast } from 'primevue';
 
@@ -205,11 +205,7 @@ const fetchDocumentations = async () => {
 
     try {
         const token = auth.state?.token || localStorage.getItem('token');
-        const response = await axios.get(`http://100.114.142.21:3002/api/v1/documentation/${props.paketId}`, {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        });
+        const response = await api.get(`/documentation/${props.paketId}`);
 
         if (response.data && Array.isArray(response.data.data)) {
             dokumentasiList.value = response.data.data;

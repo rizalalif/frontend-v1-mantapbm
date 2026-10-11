@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, computed, reactive } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import axios from 'axios';
+import api from '@/services/api';
 import { Form } from '@primevue/forms';
 import { zodResolver } from '@primevue/forms/resolvers/zod';
 import * as z from 'zod';
@@ -156,7 +156,7 @@ const fetchUserData = async () => {
     console.log('user selected', userId.value);
 
     try {
-        const response = await axios.get(`http://100.114.142.21:3002/api/v1/users/${userId.value}`,);
+        const response = await api.get(`/users/${userId.value}`);
         console.log('user selected', response.data);
         const { id, fullName, email, role, createdAt } = response.data.data.users;
         if (fullName) {
@@ -185,8 +185,8 @@ const submitUtama = async (e) => {
 
     try {
         const url = isEdit.value
-            ? `http://100.114.142.21:3002/api/v1/users/${userId.value}` // PUT Edit User
-            : `http://100.114.142.21:3002/api/v1/users/register`;       // POST Register
+            ? `/users/${userId.value}` // PUT Edit User
+            : `/users/register`;       // POST Register
 
         const { namaDepan, namaBelakang, email, role, password, confirmPassword } = { ...e.values };
         let payload = {
@@ -204,7 +204,7 @@ const submitUtama = async (e) => {
         console.log("payload", payload);
         // return
         const method = isEdit.value ? 'put' : 'post';
-        await axios[method](url, payload);
+        await api[method](url, payload);
         toast.add({ severity: 'success', summary: isEdit.value ? 'Data berhasil diupdate!' : 'User berhasil didaftarkan!', detail: '', life: 3000 });
 
         if (!isEdit.value) router.push('/user'); // Kembali ke tabel user jika selesai register
@@ -220,7 +220,7 @@ const submitGantiPassword = async (e) => {
 
     try {
         // Karena Admin yang mengganti, cukup kirim password baru (tidak perlu password lama)
-        await axios.put(`http://100.114.142.21:3002/api/v1/users/${userId.value}/password`, {
+        await api.put(`/users/${userId.value}/password`, {
             password: e.values.passwordBaru
         });
 

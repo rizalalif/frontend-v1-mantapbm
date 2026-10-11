@@ -6,7 +6,7 @@
 </template>
 <script setup>
 import { useAuth } from '@/lib/Auth';
-import axios from 'axios';
+import api from '@/services/api';
 import { ref, onMounted } from 'vue';
 import UserHeader from './UserHeader.vue';
 import UserTable from './UserTable.vue';
@@ -21,12 +21,7 @@ async function getUsers() {
         loading.value = true;
         error.value = false;
         if (auth.isLoggedIn) {
-            const response = await axios.get("http://100.114.142.21:3002/api/v1/users", {
-                headers: {
-                    // Authorization: `Bearer ${localStorage.getItem("token")}`
-                    Authorization: `Bearer ${auth.state.token}`
-                }
-            });
+            const response = await api.get("/users");
 
             console.log("data paket 🚀🚀", response);
             users.value = response.data.data?.users;
@@ -42,11 +37,7 @@ async function getUsers() {
 
 const deleteUser = async (id) => {
     try {
-        const response = await axios.delete(`http://100.114.142.21:3002/api/v1/users/${id}`, {
-            headers: {
-                Authorization: `Bearer ${auth.state.token || localStorage.getItem('token')}`
-            }
-        });
+        const response = await api.delete(`/users/${id}`);
         // console.log("Delete paket success 🚀:", response.data);
         await getUsers();
         // emit('refresh');

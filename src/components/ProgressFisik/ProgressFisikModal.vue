@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch } from "vue";
-import axios from "axios";
+import api from '@/services/api';
 import { useAuth } from "@/lib/Auth";
 import { getChangedPayload, listOfMonths } from "@/lib/Helper";
 import ImageUpload from "./ImageUpload.vue";
@@ -253,8 +253,8 @@ const submitForm = async () => {
         console.log(`Submitting progress fisik (${isUpdate ? 'PUT' : 'POST'}) 🚀:`, payloadToSend);
 
         const response = isUpdate
-            ? await axios.put(url, payloadToSend, { headers: { Authorization: `Bearer ${auth.state.token || localStorage.getItem("token")}`, "Content-Type": "multipart/form-data" } })
-            : await axios.post(url, payloadToSend, { headers: { Authorization: `Bearer ${auth.state.token || localStorage.getItem("token")}`, "Content-Type": "multipart/form-data" } });
+            ? await api.put(url, payloadToSend, { headers: { "Content-Type": "multipart/form-data" } })
+            : await api.post(url, payloadToSend, { headers: { "Content-Type": "multipart/form-data" } });
 
         let statusKondisiPaket = props.paket.statusKondisi;
         console.log("response");
@@ -312,10 +312,7 @@ const submitForm = async () => {
         console.log('future', futureNextInput.toDateString())
         console.log("isPaketUpdated", statusKondisiPaket);
         console.log(statusKondisiPaket, "statusKondisiPaket");
-        const updatePaketStatus = await axios.put(`http://100.114.142.21:3002/api/v1/paket/${props.paket?.id}`, { statusKondisi: statusKondisiPaket, nextInputFisik: futureNextInput },
-            {
-                headers: { Authorization: `Bearer ${auth.state.token || localStorage.getItem("token")}` }
-            });
+        const updatePaketStatus = await api.put(`/paket/${props.paket?.id}`, { statusKondisi: statusKondisiPaket, nextInputFisik: futureNextInput });
 
         console.log(updatePaketStatus, "updatePaketStatus");
 
