@@ -575,11 +575,11 @@ onMounted(() => {
             </div>
 
             <!-- add paket with dummy data -->
-            <button v-if="!isEditMode"
+            <!-- <button v-if="!isEditMode"
                 class="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 @click="fillDummyData">
                 Isi Data Dummy
-            </button>
+            </button> -->
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Full width column -->
