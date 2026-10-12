@@ -99,7 +99,7 @@ const jenisPekerjaanOptions = ref([
         value: 'Survey Kondisi Jalan/Jembatan'
     }
 ]);
-const sumberDanaOptions = ref([{ label: 'APBN', value: "APBN" }, { label: 'APBD', value: "APBD" }, { label: 'BLUD', value: "BLUD" }]);
+const sumberDanaOptions = ref([{ label: 'APBN', value: "APBN" }]);
 const statusOptions = ref([
     { label: 'Aman', value: 'aman' },
     { label: 'Perhatian', value: 'perhatian' },
