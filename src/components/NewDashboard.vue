@@ -594,6 +594,7 @@ const loadKurvaFisik = async () => {
                 ]
             },
             options: {
+                clip: false,
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
@@ -909,11 +910,11 @@ watch(
                                 <!-- <RouterLink :to="'/paket/detail'"> -->
                                 <td class="text-left px-4 py-5">
                                     <p class="font-bold text-blue-950 mb-0.5 line-clamp-2">{{ data.jenisPekerjaan
-                                        }}</p>
+                                    }}</p>
                                 </td>
                                 <td class="text-center px-4 py-5 font-bold text-blue-950 text-nowrap">{{
                                     formatRupiah(data.akumulasiPagu)
-                                }}</td>
+                                    }}</td>
                                 <td class="text-center px-4 py-5 font-bold text-blue-950 text-nowrap">{{
                                     formatRupiah(data.akumulasiKontrak) }}</td>
 

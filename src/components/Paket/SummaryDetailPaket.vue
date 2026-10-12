@@ -516,6 +516,7 @@ const loadKurvaUang = async () => {
                 ]
             },
             options: {
+                clip: false, 
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
