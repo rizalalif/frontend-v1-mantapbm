@@ -64,6 +64,7 @@ const formProgress = ref({
     deviationFisik: 0,
     status: null,
     keterangan: null,
+    tindakLanjut:null,
     fotoTipikal: null,
     fotoStreetMap: null,
     fotoDokumentasi: null,
@@ -89,6 +90,7 @@ const openModal = (item = null) => {
             deviationFisik: item.deviationFisik !== null && item.deviationFisik !== undefined ? Number(item.deviationFisik) : null,
             status: item.status,
             keterangan: item.keterangan,
+            tindakLanjut: item.tindakLanjut,
             tglLaporan: item.tglLaporan,
             fotoTipikal: item.fotoTipikal,
             fotoStreetMap: item.fotoStreetMap,
@@ -124,6 +126,7 @@ const openModal = (item = null) => {
             deviationFisik: 0,
             status: "Sesuai Target",
             keterangan: null,
+            tindakLanjut:null,
             tglLaporan: "2026-08-25T00:00:00.000Z",
             fotoTipikal: null,
             fotoStreetMap: null,
@@ -222,7 +225,8 @@ const submitForm = async () => {
             planPercentage: Number(formProgress.value.planPercentage) || 0,
             deviationFisik: Number(formProgress.value.deviationFisik) || 0,
             status: selectedStatus.value || formProgress.value.status || "Sesuai Target",
-            keterangan: formProgress.value.keterangan
+            keterangan: formProgress.value.keterangan,
+            tindakLanjut: formProgress.value.tindakLanjut,
         };
 
         for (const key in formProgress.value) {
@@ -458,14 +462,26 @@ const submitForm = async () => {
                             </div> -->
 
                             <div class="md:col-span-3">
-                                <div class="flex flex-col">
-                                    <label
-                                        class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Keterangan
-                                        / Kendala</label>
-                                    <textarea rows="2" :required="formProgress.status == 'Terlambat'"
-                                        v-model="formProgress.keterangan"
-                                        class="w-full bg-slate-50 text-sm font-medium text-blue-950 rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none resize-none"
-                                        placeholder="Tuliskan keterangan laporan..."></textarea>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div class="col-start-1 col-end-2">
+
+                                        <label
+                                            class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Keterangan
+                                            / Kendala</label>
+                                        <textarea rows="2" :required="formProgress.status == 'Terlambat'"
+                                            v-model="formProgress.keterangan"
+                                            class="w-full bg-slate-50 text-sm font-medium text-blue-950 rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none resize-none"
+                                            placeholder="Tuliskan keterangan laporan..."></textarea>
+                                    </div>
+                                    <div class="col-start-2 col-end-3">
+
+                                        <label
+                                            class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Tindak Lanjut</label>
+                                        <textarea rows="2" :required="formProgress.status == 'Terlambat'"
+                                            v-model="formProgress.tindakLanjut"
+                                            class="w-full bg-slate-50 text-sm font-medium text-blue-950 rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none resize-none"
+                                            placeholder="Tuliskan keterangan tindak lanjut..."></textarea>
+                                    </div>
                                     <!-- <Message severity="error" size="small" variant="simple"
                                         v-if="formProgress.status == 'Terlambat'">Harap isi keterangan / kendala
                                     </Message> -->

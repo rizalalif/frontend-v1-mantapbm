@@ -131,7 +131,7 @@
                             <div class="flex justify-between text-xs mb-1">
                                 <span class="text-slate-500 font-medium">Realisasi Aktual</span>
                                 <span class="font-bold text-emerald-600">{{ statusProgressFisik.actualPercentage
-                                    }}%</span>
+                                }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
                                 <div class="h-2 rounded-full transition-all"
@@ -164,7 +164,7 @@
                             <div class="flex justify-between text-xs mb-1">
                                 <span class="text-slate-500 font-medium">Target Rencana</span>
                                 <span class="font-bold text-slate-700">{{ statusProgressKeuangan.planPercentage
-                                    }}%</span>
+                                }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
                                 <div class="bg-blue-400 h-2 rounded-full"
@@ -178,7 +178,7 @@
                             <div class="flex justify-between text-xs mb-1">
                                 <span class="text-slate-500 font-medium">Realisasi Aktual</span>
                                 <span class="font-bold text-emerald-600">{{ statusProgressKeuangan.actualPercentage
-                                    }}%</span>
+                                }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
                                 <div class="h-2 rounded-full transition-all"
@@ -272,10 +272,10 @@
             <!-- Permasalahan & Tindak Lanjut -->
             <div class="lg:col-span-5 bg-white rounded-xl shadow-sm border border-slate-200/60 flex flex-col h-[380px]">
                 <div class="p-4 border-b border-slate-100 flex-none bg-slate-50/50 rounded-t-xl">
-                    <h2 class="text-sm font-bold text-slate-800">Permasalahan dan Tindak Lanjut</h2>
+                    <h2 class="text-sm font-bold text-slate-800">Permasalahan dan Tindak Lanjut {{ kendalaLastProgress.keterangan == "" }} </h2>
                 </div>
-                <div class="p-4 flex-1 overflow-y-auto custom-scrollbar-y">
-                    <div class="h-full flex flex-col items-center justify-center text-center">
+                <div class="p-4 flex-1 overflow-y-auto custom-scrollbar-y w-full h-full">
+                    <div v-if="!kendalaLastProgress.keterangan || kendalaLastProgress.keterangan == ''" class="h-full flex flex-col items-center justify-center text-center">
                         <div class="bg-emerald-50 p-4 rounded-full mb-3">
                             <svg class="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -284,6 +284,27 @@
                         </div>
                         <h3 class="text-sm font-bold text-slate-800">Tidak ada kendala kritis</h3>
                         <p class="text-xs text-slate-500 mt-1">Pekerjaan berjalan sesuai dengan rencana teknis.</p>
+                    </div>
+                    <div v-else>
+
+                        <table class="w-full table-fixed border-collapse border border-gray-400">
+                            <thead>
+                                <tr>
+                                    <!-- <th class="px-2 py-1 border border-gray-300">Periode</th> -->
+                                    <th class="w-1/2 px-2  py-1 border border-gray-300">Kendala</th>
+                                    <th class="w-1/2 px-2 py-1 border border-gray-300">Tindak Lanjut</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="border px-2 py-1px-2 py-1  border-gray-300">{{ kendalaLastProgress.keterangan
+                                    }}</td>
+                                <td class="border px-2 py-1px-2 py-1 break-words whitespace-normal   border-gray-300">
+                                    {{ kendalaLastProgress.tindakLanjut }}</td>
+                                </tr>
+                                
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -594,6 +615,11 @@ const fotoLastProgress = ref({
     fotoStreetMap: '',
     fotoDokumentasi: '',
 })
+
+const kendalaLastProgress = ref({
+    keterangan: '',
+    tindakLanjut: '',
+});
 // State Penampung Data Utama
 const detailPaket = ref(null);
 
@@ -616,18 +642,20 @@ const setDataPaket = () => {
     if (!detailPaket.value) return;
 
     // Handle physical progress data
-    const progressFisikData = detailPaket.value.progressFisiks || detailPaket.value.progressFisik || [];
+    const progressFisikData = detailPaket.value.progressFisiks || [];
+    console.log('progreee fisik data');
+    console.log(progressFisikData.length > 0);
     if (progressFisikData.length > 0) {
-        const lastStatus = progressFisikData[0];
+        const lastStatus = progressFisikData[progressFisikData.length - 1];
         statusProgressFisik.value.actualPercentage = lastStatus.actualPercentage || 0;
         statusProgressFisik.value.planPercentage = lastStatus.planPercentage || 0;
         statusProgressFisik.value.deviationFisik = lastStatus.deviationFisik || 0;
         fotoLastProgress.value.fotoTipikal = lastStatus.fotoTipikal || '';
         fotoLastProgress.value.fotoStreetMap = lastStatus.fotoStreetMap || '';
         fotoLastProgress.value.fotoDokumentasi = lastStatus.fotoDokumentasi || '';
+        kendalaLastProgress.value.keterangan = lastStatus.keterangan || '';
+        kendalaLastProgress.value.tindakLanjut = lastStatus.tindakLanjut || '';
 
-        console.log('progreee fisik data');
-        console.log(lastStatus);
 
 
 
@@ -638,12 +666,14 @@ const setDataPaket = () => {
         fotoLastProgress.value.fotoTipikal = '';
         fotoLastProgress.value.fotoStreetMap = '';
         fotoLastProgress.value.fotoDokumentasi = '';
+        kendalaLastProgress.value.kendala = '';
+        kendalaLastProgress.value.tindakLanjut = '';
     }
 
     // Handle financial progress data
     const progressKeuanganData = detailPaket.value.progressKeuangans || detailPaket.value.progressKeuangan || [];
     if (progressKeuanganData.length > 0) {
-        const lastStatus = progressKeuanganData[0];
+        const lastStatus = progressKeuanganData[progressKeuanganData.length - 1];
         statusProgressKeuangan.value.actualPercentage = lastStatus.actualPercentage || 0;
         statusProgressKeuangan.value.planPercentage = lastStatus.paguPercentage || lastStatus.planPercentage || 0;
         statusProgressKeuangan.value.deviationFinance = lastStatus.deviationFinance || 0;
