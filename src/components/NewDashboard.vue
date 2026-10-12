@@ -799,18 +799,18 @@ watch(
         <!-- ROW 1: SUMMARY CARDS (6 Kolom) -->
         <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-5 mb-6">
             <!-- 1. Total Paket -->
-            <CardTop title="Total Paket" :value="dashboardData.totalPaket"></CardTop>
+            <CardTop bgColor="bg-[#082D58]" title="Total Paket" :value="dashboardData.totalPaket"></CardTop>
             <!-- 2. Paket Berjalan -->
-            <CardTop title="Paket Berjalan" :value="dashboardData.berjalan"></CardTop>
+            <CardTop bgColor="bg-[#007BFF]" title="Paket Berjalan" :value="dashboardData.berjalan"></CardTop>
             <!-- 3. Paket Selesai -->
-            <CardTop title="Paket Selesai" :value="dashboardData.selesai"></CardTop>
+            <CardTop bgColor="bg-[#10B881]" title="Paket Selesai" :value="dashboardData.selesai"></CardTop>
             <!-- <div
             class="bg-white rounded-3xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col justify-between">
             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Paket Selesai</p>
             <h2 class="text-3xl font-extrabold text-blue-950 mb-1">30</h2>
         </div> -->
             <!-- 4. Nilai Kontrak -->
-            <CardTop title="Total Nilai Kontrak"
+            <CardTop bgColor="bg-[#082D58]" title="Total Nilai Kontrak"
                 :value="dashboardData.nilaiKontrak ? formatWithCustomSeparators(Number(dashboardData.nilaiKontrak), ',', '.') : 0">
             </CardTop>
             <!-- <div
@@ -821,10 +821,12 @@ watch(
                         class="text-lg">T</span></h2>
             </div> -->
             <!-- 5. Rata-rata Progres Fisik -->
-            <CardTop title="Realisasi Fisik" :value="dashboardData.percentageFisik + '%'"></CardTop>
+            <CardTop bgColor="bg-[#007BFF]" title="Realisasi Fisik" :value="dashboardData.percentageFisik + '%'">
+            </CardTop>
 
             <!-- 6. Rata-rata Progres Keuangan -->
-            <CardTop title="Realisasi Keuangan" :value="dashboardData.percentageKeuangan + '%'"></CardTop>
+            <CardTop bgColor="bg-[#F7B500]" title="Realisasi Keuangan" :value="dashboardData.percentageKeuangan + '%'">
+            </CardTop>
 
         </div>
 
@@ -910,11 +912,11 @@ watch(
                                 <!-- <RouterLink :to="'/paket/detail'"> -->
                                 <td class="text-left px-4 py-5">
                                     <p class="font-bold text-blue-950 mb-0.5 line-clamp-2">{{ data.jenisPekerjaan
-                                    }}</p>
+                                        }}</p>
                                 </td>
                                 <td class="text-center px-4 py-5 font-bold text-blue-950 text-nowrap">{{
                                     formatRupiah(data.akumulasiPagu)
-                                    }}</td>
+                                }}</td>
                                 <td class="text-center px-4 py-5 font-bold text-blue-950 text-nowrap">{{
                                     formatRupiah(data.akumulasiKontrak) }}</td>
 
