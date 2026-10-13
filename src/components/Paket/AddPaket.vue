@@ -53,7 +53,36 @@ function switchTab(tabId, event) {
 }
 
 
-const statusProgress = ref(null)
+// const statusProgress = ref(null)
+const statusProgress = computed(() => {
+    // 1. Cegah error jika data paket belum di-load (masih undefined)
+    if (!props.paket) return null;
+
+    // 2. Jika status paket sudah selesai, otomatis Updated
+    if (props.paket.statusPaket === "selesai") {
+        return 'Updated';
+    }
+
+    // 3. Jika belum ada target nextInputFisik sama sekali
+    if (!props.paket.nextInputFisik) {
+        return 'Belum Upload';
+    }
+
+    // 4. Proses perbandingan waktu
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const targetDate = new Date(props.paket.nextInputFisik);
+    targetDate.setHours(0, 0, 0, 0);
+
+    // Jika hari ini masih sebelum atau sama dengan batas waktu (nextInputDate)
+    if (today < targetDate) {
+        return 'Updated';
+    } else {
+        // Jika hari ini sudah melewati nextInputDate
+        return 'Belum Upload';
+    }
+});
 const nilaiKontrak = ref(null);
 const selectedTahun = ref(null);
 const filteredTahun = ref([]);
@@ -477,40 +506,6 @@ watch(
     }
 )
 
-watch(() => props.paket?.progressFisiks,
-    (progressFisiks) => {
-        const today = new Date()
-
-        console.log('nextInputFisik');
-        console.log(new Date(props.paket.nextInputFisik));
-        console.log(today.setHours(0, 0, 0, 0) < new Date(props.paket.nextInputFisik).setHours(0, 0, 0, 0));
-
-        if (progressFisiks == undefined) return
-        if (progressFisiks.length < 1) return
-        if (props?.paket == undefined || props?.paket == null) return
-
-
-        console.log("today", today)
-        const lastInput = progressFisiks[0].createdAt
-        if (props.paket.statusPaket == "selesai") {
-            statusProgress.value = 'Updated'
-            return
-        }
-
-        if (today.setHours(0, 0, 0, 0) < new Date(props.paket.nextInputFisik).setHours(0, 0, 0, 0)) {
-            console.log('updated');
-
-
-            statusProgress.value = 'Updated'
-        } else {
-            console.log('not updated');
-
-
-            statusProgress.value = 'Belum Upload'
-        }
-
-    }, { immediate: true }
-)
 const getStatusBadgeClass = (status) => {
 
     if (!status) return 'px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-md text-[10px] font-bold';
@@ -522,6 +517,21 @@ const getStatusBadgeClass = (status) => {
         return 'px-2.5 py-1 bg-blue-100 text-blue-700 rounded-md text-[10px] font-bold';
     }
     return 'px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-md text-[10px] font-bold';
+};
+
+const handleRealtimeInput = (event) => {
+    // event.value berisi nilai angka murni (misal: 3.65) SECARA REAL-TIME setiap kali ditekan
+
+    // 1. (Opsional) Paksa perbarui nilai v-model jika ingin reaktivitas langsung
+    panjangKm.value = event.value;
+
+    // 2. Lakukan pengecekan apakah nilainya berbeda dari data awal dari database
+    // Jika beda, tombol Update akan langsung muncul tanpa harus klik luar
+    if (event.value !== originalPanjangKm) {
+        isVisibleSubmitUpdate.value = true;
+    } else {
+        isVisibleSubmitUpdate.value = false;
+    }
 };
 onMounted(() => {
     getPic()
@@ -709,15 +719,30 @@ onMounted(() => {
                         class="w-full bg-slate-50 text-sm font-semibold text-blue-950 rounded-xl px-4 py-3.5 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none placeholder-slate-300">
                 </div>
 
-                <div>
+                <div class="col-span-1">
                     <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Panjang
                         Ruas (Km)</label>
-                    <div class="relative">
-                        <input type="number" placeholder="0.0" step="0.1" v-model="paket.panjangKm"
-                            class="w-full bg-slate-50 text-sm font-bold text-blue-950 rounded-xl pl-4 pr-12 py-3.5 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none placeholder-slate-300">
+
+                    <div class="relative w-full">
+
+                        <!-- <input type="number" placeholder="0.0" step="0.1" v-model="paket.panjangKm"
+                            class="w-full bg-slate-50 text-sm font-bold text-blue-950 rounded-xl pl-4 pr-12 py-3.5 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none placeholder-slate-300"> -->
+                        <InputNumber id="panjangKm" @input="handleRealtimeInput" v-model="paket.panjangKm"
+                            mode="decimal" :minFractionDigits="3" :pt="{
+                                root: { class: 'w-full' },
+                                // input: { root: { class: 'w-full' } }
+                            }" :maxFractionDigits="3" locale="id-ID" input-class="w-full! bg-slate-50! text-sm! font-bold! text-blue-950! rounded-xl!
+                        px-4! py-3! border-none! focus:ring-2! focus:ring-orange-500! focus:outline-none!" />
+                        <!-- Teks KM melayang di dalam kotak di ujung kanan -->
                         <span
-                            class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Km</span>
+                            class="absolute right-4 top-1/2 -translate-y-1/2 text-sm! font-bold! text-blue-950! font-bold pointer-events-none">
+                            KM
+                        </span>
                     </div>
+                    <!-- <span
+                        class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Km</span> -->
+                    <!-- <div>
+                    </div> -->
                 </div>
                 <!-- row 2 -->
                 <div>
