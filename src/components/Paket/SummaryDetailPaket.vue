@@ -117,7 +117,8 @@
                         <div>
                             <div class="flex justify-between text-xs mb-1">
                                 <span class="text-slate-500 font-medium">Target Rencana</span>
-                                <span class="font-bold text-slate-700">{{ statusProgressFisik.planPercentage }}%</span>
+                                <span class="font-bold text-slate-700">{{ statusProgressFisik.planPercentage.toFixed(2)
+                                }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
                                 <div class="bg-blue-400 h-2 rounded-full"
@@ -130,7 +131,8 @@
                         <div>
                             <div class="flex justify-between text-xs mb-1">
                                 <span class="text-slate-500 font-medium">Realisasi Aktual</span>
-                                <span class="font-bold text-emerald-600">{{ statusProgressFisik.actualPercentage
+                                <span class="font-bold text-emerald-600">{{
+                                    statusProgressFisik.actualPercentage.toFixed(2)
                                 }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
@@ -155,15 +157,16 @@
                 <div
                     class="bg-white rounded-xl shadow-sm border border-slate-200/60 p-5 flex-1 flex flex-col justify-between">
                     <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Progress Keuangan
+                        <span class="w-2 h-2 rounded-full bg-[#f97316]"></span> Progress Keuangan
                     </h3>
 
                     <div class="space-y-3">
                         <!-- Rencana -->
                         <div>
                             <div class="flex justify-between text-xs mb-1">
-                                <span class="text-slate-500 font-medium">Target Rencana</span>
-                                <span class="font-bold text-slate-700">{{ statusProgressKeuangan.planPercentage
+                                <span class="text-slate-500 font-medium">Terhadap Pagu</span>
+                                <span class="font-bold text-slate-700">{{
+                                    statusProgressKeuangan.planPercentage.toFixed(2)
                                 }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
@@ -176,8 +179,9 @@
                         <!-- Aktual -->
                         <div>
                             <div class="flex justify-between text-xs mb-1">
-                                <span class="text-slate-500 font-medium">Realisasi Aktual</span>
-                                <span class="font-bold text-emerald-600">{{ statusProgressKeuangan.actualPercentage
+                                <span class="text-slate-500 font-medium">Terhadap Kontrak</span>
+                                <span class="font-bold text-emerald-600">{{
+                                    statusProgressKeuangan.actualPercentage.toFixed(2)
                                 }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
@@ -272,10 +276,12 @@
             <!-- Permasalahan & Tindak Lanjut -->
             <div class="lg:col-span-5 bg-white rounded-xl shadow-sm border border-slate-200/60 flex flex-col h-[380px]">
                 <div class="p-4 border-b border-slate-100 flex-none bg-slate-50/50 rounded-t-xl">
-                    <h2 class="text-sm font-bold text-slate-800">Permasalahan dan Tindak Lanjut {{ kendalaLastProgress.keterangan == "" }} </h2>
+                    <h2 class="text-sm font-bold text-slate-800">Permasalahan dan Tindak Lanjut {{
+                        kendalaLastProgress.keterangan == "" }} </h2>
                 </div>
                 <div class="p-4 flex-1 overflow-y-auto custom-scrollbar-y w-full h-full">
-                    <div v-if="!kendalaLastProgress.keterangan || kendalaLastProgress.keterangan == ''" class="h-full flex flex-col items-center justify-center text-center">
+                    <div v-if="!kendalaLastProgress.keterangan || kendalaLastProgress.keterangan == ''"
+                        class="h-full flex flex-col items-center justify-center text-center">
                         <div class="bg-emerald-50 p-4 rounded-full mb-3">
                             <svg class="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -297,12 +303,14 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td class="border px-2 py-1px-2 py-1  border-gray-300">{{ kendalaLastProgress.keterangan
+                                    <td class="border px-2 py-1px-2 py-1  border-gray-300">{{
+                                        kendalaLastProgress.keterangan
                                     }}</td>
-                                <td class="border px-2 py-1px-2 py-1 break-words whitespace-normal   border-gray-300">
-                                    {{ kendalaLastProgress.tindakLanjut }}</td>
+                                    <td
+                                        class="border px-2 py-1px-2 py-1 break-words whitespace-normal   border-gray-300">
+                                        {{ kendalaLastProgress.tindakLanjut }}</td>
                                 </tr>
-                                
+
                             </tbody>
                         </table>
                     </div>
@@ -516,7 +524,7 @@ const loadKurvaUang = async () => {
                 ]
             },
             options: {
-                clip: false, 
+                clip: false,
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
@@ -648,9 +656,30 @@ const setDataPaket = () => {
     console.log(progressFisikData.length > 0);
     if (progressFisikData.length > 0) {
         const lastStatus = progressFisikData[progressFisikData.length - 1];
-        statusProgressFisik.value.actualPercentage = lastStatus.actualPercentage || 0;
-        statusProgressFisik.value.planPercentage = lastStatus.planPercentage || 0;
-        statusProgressFisik.value.deviationFisik = lastStatus.deviationFisik || 0;
+        // statusProgressFisik.value.actualPercentage = lastStatus.actualPercentage || 0;
+        // statusProgressFisik.value.planPercentage = lastStatus.planPercentage || 0;
+        // statusProgressFisik.value.deviationFisik = lastStatus.deviationFisik || 0;
+
+        let totalActualNominalFisik = 0;
+        let totalPlanPercentageFisik = 0;
+        let totalActualPercentageFisik = 0;
+
+        progressFisikData.forEach(progress => {
+            if (progress) {
+                totalActualNominalFisik += Number(progress.actualNominal) || 0;
+                totalPlanPercentageFisik += Number(progress.planPercentage) || 0;
+                totalActualPercentageFisik += Number(progress.actualPercentage) || 0;
+            }
+        })
+
+        statusProgressFisik.value = {
+            actualNominal: totalActualNominalFisik,
+            planPercentage: totalPlanPercentageFisik,
+            actualPercentage: totalActualPercentageFisik
+        };
+
+
+
         fotoLastProgress.value.fotoTipikal = lastStatus.fotoTipikal || '';
         fotoLastProgress.value.fotoStreetMap = lastStatus.fotoStreetMap || '';
         fotoLastProgress.value.fotoDokumentasi = lastStatus.fotoDokumentasi || '';
@@ -675,9 +704,23 @@ const setDataPaket = () => {
     const progressKeuanganData = detailPaket.value.progressKeuangans || detailPaket.value.progressKeuangan || [];
     if (progressKeuanganData.length > 0) {
         const lastStatus = progressKeuanganData[progressKeuanganData.length - 1];
-        statusProgressKeuangan.value.actualPercentage = lastStatus.actualPercentage || 0;
-        statusProgressKeuangan.value.planPercentage = lastStatus.paguPercentage || lastStatus.planPercentage || 0;
-        statusProgressKeuangan.value.deviationFinance = lastStatus.deviationFinance || 0;
+        let totalActualNominalKeuangan = 0;
+        let totalPlanPercentageKeuangan = 0;
+        let totalActualPercentageKeuangan = 0;
+
+        progressKeuanganData.forEach(progress => {
+            if (progress) {
+                totalActualNominalKeuangan += Number(progress.actualNominal) || 0;
+                totalPlanPercentageKeuangan += Number(progress.paguPercentage) || 0;
+                totalActualPercentageKeuangan += Number(progress.actualPercentage) || 0;
+            }
+        })
+
+        statusProgressKeuangan.value = {
+            actualNominal: totalActualNominalKeuangan,
+            planPercentage: totalPlanPercentageKeuangan,
+            actualPercentage: totalActualPercentageKeuangan
+        };
     } else {
         statusProgressKeuangan.value.actualPercentage = 0;
         statusProgressKeuangan.value.planPercentage = 0;
