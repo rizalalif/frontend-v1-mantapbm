@@ -88,15 +88,30 @@
         <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-6">
             <!-- Card Kurva Keuangan / S-Curve -->
             <div class="xl:col-span-8 bg-white rounded-xl shadow-sm border border-slate-200/60 p-5">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
-                            </path>
-                        </svg>
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex justify-center items-center gap-3">
+                        <div class="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+                                </path>
+                            </svg>
+                        </div>
+
+                        <h2 class="text-base font-bold text-slate-800">S - Curve</h2>
                     </div>
-                    <h2 class="text-base font-bold text-slate-800">S - Curve</h2>
+                    <div class="w-30 flex justify-around items-start h-full">
+                        <div class="">
+                            <span class="font-bold px-3 py-2 rounded-lg text-sm bg-emerald-50 text-emerald-600 '">
+                                {{ lastPercentage.fisik || 0 }}%
+                            </span>
+                        </div>
+                        <div class="">
+                            <span class="font-bold px-3 py-2 rounded-lg text-sm bg-orange-50 text-orange-600 '">
+                                {{ lastPercentage.keuangan || 0 }}%
+                            </span>
+                        </div>
+                    </div>
                 </div>
                 <div class="h-[300px]">
                     <canvas id="chartUang" ref="chartUangRef"></canvas>
@@ -118,7 +133,7 @@
                             <div class="flex justify-between text-xs mb-1">
                                 <span class="text-slate-500 font-medium">Target Rencana</span>
                                 <span class="font-bold text-slate-700">{{ statusProgressFisik.planPercentage.toFixed(2)
-                                }}%</span>
+                                    }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
                                 <div class="bg-blue-400 h-2 rounded-full"
@@ -133,7 +148,7 @@
                                 <span class="text-slate-500 font-medium">Realisasi Aktual</span>
                                 <span class="font-bold text-emerald-600">{{
                                     statusProgressFisik.actualPercentage.toFixed(2)
-                                }}%</span>
+                                    }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
                                 <div class="h-2 rounded-full transition-all"
@@ -167,7 +182,7 @@
                                 <span class="text-slate-500 font-medium">Terhadap Pagu</span>
                                 <span class="font-bold text-slate-700">{{
                                     statusProgressKeuangan.planPercentage.toFixed(2)
-                                }}%</span>
+                                    }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
                                 <div class="bg-blue-400 h-2 rounded-full"
@@ -182,7 +197,7 @@
                                 <span class="text-slate-500 font-medium">Terhadap Kontrak</span>
                                 <span class="font-bold text-emerald-600">{{
                                     statusProgressKeuangan.actualPercentage.toFixed(2)
-                                }}%</span>
+                                    }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
                                 <div class="h-2 rounded-full transition-all"
@@ -305,7 +320,7 @@
                                 <tr>
                                     <td class="border px-2 py-1px-2 py-1  border-gray-300">{{
                                         kendalaLastProgress.keterangan
-                                    }}</td>
+                                        }}</td>
                                     <td
                                         class="border px-2 py-1px-2 py-1 break-words whitespace-normal   border-gray-300">
                                         {{ kendalaLastProgress.tindakLanjut }}</td>
@@ -385,6 +400,11 @@ const props = defineProps({
     }
 });
 
+const lastPercentage = ref({
+    keuangan: 0,
+    fisik: 0
+})
+
 const backendUrl = ref(`${BASE_URL}/images/progress-fisik/`);
 let mapInstance = null;
 const emit = defineEmits(['refresh']);
@@ -408,7 +428,7 @@ const statusProgressKeuangan = ref({
 const statusProgressFisik = ref({
     actualPercentage: 0,
     planPercentage: 0,
-    deviationFisik: null,
+    deviationFisik: 0,
 
     status: ''
 });
@@ -491,6 +511,15 @@ const loadKurvaUang = async () => {
         }
 
         const { labels, aktualFisik, aktualKeuangan } = response.data?.data || {};
+
+        lastPercentage.value.keuangan = aktualKeuangan[aktualKeuangan.filter((item) => item !== null).length - 1];
+        lastPercentage.value.fisik = aktualFisik[aktualFisik.filter((item) => item !== null).length - 1];
+
+        console.log("aktual");
+
+        console.log(aktualFisik);
+        console.log(aktualKeuangan);
+
         Chart.register(ChartDataLabels)
         chartKeuanganInstance = new Chart(chartUangRef.value, {
             type: 'line',
@@ -675,8 +704,13 @@ const setDataPaket = () => {
         statusProgressFisik.value = {
             actualNominal: totalActualNominalFisik,
             planPercentage: totalPlanPercentageFisik,
-            actualPercentage: totalActualPercentageFisik
+            actualPercentage: totalActualPercentageFisik,
+            deviationFisik: totalActualPercentageFisik - totalPlanPercentageFisik,
         };
+
+
+        console.log("deviation")
+        console.log(totalActualPercentageFisik - totalPlanPercentageFisik)
 
 
 

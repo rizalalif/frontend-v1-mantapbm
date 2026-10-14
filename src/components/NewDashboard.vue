@@ -23,6 +23,10 @@ const auth = useAuth();
 const isLoading = ref(false);
 const route = useRoute();
 
+const lastPercentage = ref({
+    fisik: 0,
+    keuangan: 0,
+})
 const chartFisikRef = ref(null)
 const chartUangRef = ref(null)
 const chartKategoriRef = ref(null)
@@ -562,6 +566,9 @@ const loadKurvaFisik = async () => {
             isEmptyFisik.value = true
             return;
         }
+
+        lastPercentage.value.fisik = aktual[aktual.filter(val => val !== null && val !== undefined).length -1]
+        lastPercentage.value.keuangan = aktualKeuangan[aktualKeuangan.filter(val => val !== null && val !== undefined).length -1]
         chartFisikInstance = new Chart(chartFisikRef.value, {
             type: 'line',
             data: {
@@ -837,10 +844,22 @@ watch(
             <div
                 class="md:col-start-1 md:col-end-3 bg-white rounded-[24px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 h-[300px] flex flex-col">
                 <div class="flex justify-between cursor-pointer">
-                    <h3 class="font-bold text-sm text-blue-950 uppercase tracking-wide mb-4">Grafik Progres Realisasi
-                        <span class="text-slate-400 font-medium normal-case text-[10px]">(Fisik vs
-                            Keuangan)</span>
+
+                    <h3 class="font-bold text-sm text-blue-950 uppercase tracking-wide mb-4">Grafik Progres
+                        Realisasi
                     </h3>
+                    <div class="w-35 flex justify-around items-start h-full">
+                        <div class="">
+                            <span class="font-bold px-3 py-2 rounded-lg text-sm bg-blue-50 text-blue-600 '">
+                                {{ lastPercentage.fisik }}%
+                            </span>
+                        </div>
+                        <div class="">
+                            <span class="font-bold px-3 py-2 rounded-lg text-sm bg-yellow-50 text-yellow-600 '">
+                                {{ lastPercentage.keuangan }}%
+                            </span>
+                        </div>
+                    </div>
                     <Expand v-if="!isEmptyFisik"
                         @click="openModal('chartFisik', 'Grafik Progres Fisik (Rencana vs Realisasi)')" />
                 </div>
