@@ -100,7 +100,7 @@
 
                         <h2 class="text-base font-bold text-slate-800">S - Curve</h2>
                     </div>
-                    <div class="w-30 flex justify-around items-start h-full">
+                    <div class="flex items-start gap-3 h-full">
                         <div class="">
                             <span class="font-bold px-3 py-2 rounded-lg text-sm bg-emerald-50 text-emerald-600 '">
                                 {{ lastPercentage.fisik || 0 }}%
@@ -133,7 +133,7 @@
                             <div class="flex justify-between text-xs mb-1">
                                 <span class="text-slate-500 font-medium">Target Rencana</span>
                                 <span class="font-bold text-slate-700">{{ statusProgressFisik.planPercentage.toFixed(2)
-                                    }}%</span>
+                                }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
                                 <div class="bg-blue-400 h-2 rounded-full"
@@ -148,7 +148,7 @@
                                 <span class="text-slate-500 font-medium">Realisasi Aktual</span>
                                 <span class="font-bold text-emerald-600">{{
                                     statusProgressFisik.actualPercentage.toFixed(2)
-                                    }}%</span>
+                                }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
                                 <div class="h-2 rounded-full transition-all"
@@ -182,7 +182,7 @@
                                 <span class="text-slate-500 font-medium">Terhadap Pagu</span>
                                 <span class="font-bold text-slate-700">{{
                                     statusProgressKeuangan.planPercentage.toFixed(2)
-                                    }}%</span>
+                                }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
                                 <div class="bg-blue-400 h-2 rounded-full"
@@ -197,7 +197,7 @@
                                 <span class="text-slate-500 font-medium">Terhadap Kontrak</span>
                                 <span class="font-bold text-emerald-600">{{
                                     statusProgressKeuangan.actualPercentage.toFixed(2)
-                                    }}%</span>
+                                }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
                                 <div class="h-2 rounded-full transition-all"
@@ -320,7 +320,7 @@
                                 <tr>
                                     <td class="border px-2 py-1px-2 py-1  border-gray-300">{{
                                         kendalaLastProgress.keterangan
-                                        }}</td>
+                                    }}</td>
                                     <td
                                         class="border px-2 py-1px-2 py-1 break-words whitespace-normal   border-gray-300">
                                         {{ kendalaLastProgress.tindakLanjut }}</td>

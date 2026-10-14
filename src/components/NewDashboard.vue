@@ -848,7 +848,7 @@ watch(
                     <h3 class="font-bold text-sm text-blue-950 uppercase tracking-wide mb-4">Grafik Progres
                         Realisasi
                     </h3>
-                    <div class="w-35 flex justify-around items-start h-full">
+                    <div class="flex items-start gap-3 h-full">
                         <div class="">
                             <span class="font-bold px-3 py-2 rounded-lg text-sm bg-blue-50 text-blue-600 '">
                                 {{ lastPercentage.fisik }}%
