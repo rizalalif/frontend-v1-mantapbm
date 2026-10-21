@@ -163,13 +163,15 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="bg-[#f1f5f9] flex h-screen w-full overflow-hidden text-slate-800 custom-font">
+    <div
+        class="bg-[url('../assets/images/bg.webp')] bg-cover bg-center flex h-screen w-full overflow-hidden text-slate-800 custom-font">
         <!-- SIDEBAR -->
         <aside v-if="!isMobile" class="w-[18%] bg-[#072343] m-4 rounded-3xl flex flex-col p-6 z-10 relative shrink-0">
             <div class="flex items-center gap-3 mb-10 px-2 mt-2">
                 <div
                     class="w-10 h-10 rounded-2xl bg-orange-500 flex items-center justify-center text-white shadow-lg shadow-orange-500/30">
-                    <img class="object-fill rounded-md" src="../assets/images/LOGO MANTAP BM REVISI 6 WAHYU.png" alt="Logo Mantap">
+                    <img class="object-fill rounded-md" src="../assets/images/LOGO MANTAP BM REVISI 6 WAHYU.png"
+                        alt="Logo Mantap">
                 </div>
                 <span class="font-bold text-xl text-slate-200 tracking-tight">MANTAP BM</span>
             </div>
@@ -325,7 +327,7 @@ onUnmounted(() => {
             </header>
 
             <!-- KONTEN UTAMA -->
-            <main class="flex-1 bg-[#f1f5f9] p-8 overflow-y-auto main-scroll pt-32">
+            <main class="flex-1 p-8 overflow-y-auto main-scroll pt-32">
                 <RouterView />
 
             </main>

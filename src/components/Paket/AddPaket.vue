@@ -3,7 +3,7 @@ import { useAuth } from '@/lib/Auth';
 import { getChangedPayload } from '@/lib/Helper';
 // import router from '@/router';
 import api from '@/services/api';
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import z from 'zod';
@@ -234,6 +234,10 @@ const schema = z.object({
     panjangKm: z.any().optional(),
     nilaiKontrak: z.any().optional(),
     noKontrak: z.any().optional(),
+    tanggalMulai: z.any().optional(),
+    tanggalAkhir: z.any().optional(),
+    periodeKontrak: z.any().optional(),
+    produkAkhir: z.any().optional(),
     paketUserId: z.any().optional(),
     longitude: z.any().optional(),
     latitude: z.any().optional(),
@@ -298,6 +302,10 @@ const fillDummyData = () => {
         // Detail Teknis dan Keuangan
         panjangKm: Math.random() * 100, // Tipe number sesuai default
         noKontrak: "600/123/BM-KONTRAK/V/2026",
+        tanggalMulai: "2026-03-01",
+        tanggalAkhir: "2026-08-31",
+        periodeKontrak: 180,
+        produkAkhir: "Lapis Pondasi Agregat & Aspal AC-WC",
         nilaiKontrak: Math.random() * 10000000000, // Rp 18,5 Miliar (tipe number)
 
         // Pihak Terlibat
@@ -331,6 +339,10 @@ const defaultPaket = {
     latitude: "",
     panjangKm: 0,
     noKontrak: "",
+    tanggalMulai: "",
+    tanggalAkhir: "",
+    periodeKontrak: null,
+    produkAkhir: "",
     nilaiPagu: 0,
     nilaiKontrak: 0,
     penyediaJasa: "",
@@ -363,6 +375,10 @@ const paket = reactive({
     latitude: "",
     panjangKm: 0,
     noKontrak: "",
+    tanggalMulai: null,
+    tanggalAkhir: null,
+    periodeKontrak: null,
+    produkAkhir: "",
     nilaiPagu: 0,
     nilaiKontrak: 0,
     penyediaJasa: "",
@@ -375,16 +391,28 @@ const paket = reactive({
     statusProgress: false,
 })
 
+const sanitizePayload = (raw) => {
+    const data = { ...raw };
+    if (!data.tanggalMulai) {
+        data.tanggalMulai = null;
+    }
+    if (!data.tanggalAkhir) {
+        data.tanggalAkhir = null;
+    }
+    if (data.periodeKontrak === "" || data.periodeKontrak === undefined) {
+        data.periodeKontrak = null;
+    }
+    return data;
+};
+
 const handleSubmitAdd = async () => {
     paket.paketUserId = paket.paketUserId ? paket.paketUserId : null;
-    console.log("paketForm 🚀🚀🚀", paket);
-
+    const payload = sanitizePayload(paket);
+    delete payload.nextInputFisik;
+    console.log("paketForm 🚀🚀🚀", payload);
 
     try {
-
-        delete paket.nextInputFisik;
-        const response = await api.post('/paket', paket);
-        //delete nextInput Before add data paket 
+        const response = await api.post('/paket', payload);
         console.log("responsed ata 🚀🚀🚀🚀", response.data);
         router.push({ name: 'paket-detail', params: { kodePaket: response.data.data.kodePaket } })
         emit('submit-success', 'success', 'Sukses', response.data.message, 'dashboard')
@@ -402,16 +430,22 @@ const handleSubmitUpdate = async () => {
     // Cek apakah ada perubahan sama sekali
     if (Object.keys(payload).length === 0) {
         console.log("payload kosong");
-
         return;
     }
 
+    if ('tanggalMulai' in payload && !payload.tanggalMulai) {
+        payload.tanggalMulai = null;
+    }
+    if ('tanggalAkhir' in payload && !payload.tanggalAkhir) {
+        payload.tanggalAkhir = null;
+    }
+    if ('periodeKontrak' in payload && (payload.periodeKontrak === "" || payload.periodeKontrak === undefined)) {
+        payload.periodeKontrak = null;
+    }
 
     try {
         const response = await api.put(`/paket/${props.paket.id}`, payload);
         console.log("responsed ata 🚀🚀🚀🚀", response.data.message);
-
-
 
         router.push({ name: 'paket-detail', params: { kodePaket: response.data.data.kodePaket } })
         emit('submit-success', 'success', 'Sukses', response.data.message, 'dashboard')
@@ -421,15 +455,89 @@ const handleSubmitUpdate = async () => {
 }
 
 
-const handleSubmit = (e) => {
+const scrollToField = async (fieldName) => {
+    await nextTick();
+    const targetEl = document.getElementById(`form-field-${fieldName}`) ||
+        document.querySelector(`[name="${fieldName}"]`);
+    if (targetEl) {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const focusable = targetEl.matches('input, select, textarea')
+            ? targetEl
+            : targetEl.querySelector('input, select, textarea, [tabindex="0"]');
+        if (focusable && typeof focusable.focus === 'function') {
+            focusable.focus({ preventScroll: true });
+        }
+    }
+};
+
+const scrollToFirstInvalidField = async (e) => {
+    await nextTick();
+    let firstErrorField = null;
+
+    if (e?.errors) {
+        if (Array.isArray(e.errors) && e.errors.length > 0) {
+            firstErrorField = e.errors[0]?.name || e.errors[0]?.field || null;
+        } else if (typeof e.errors === 'object') {
+            const keys = Object.keys(e.errors);
+            if (keys.length > 0) {
+                firstErrorField = keys[0];
+            }
+        }
+    }
+
+    let targetEl = null;
+
+    if (firstErrorField) {
+        targetEl = document.getElementById(`form-field-${firstErrorField}`) ||
+            document.querySelector(`[name="${firstErrorField}"]`);
+    }
+
+    if (!targetEl) {
+        targetEl = document.querySelector(
+            '.p-invalid, [aria-invalid="true"], [class*="!border-red-500"], [class*="border-red-500"], .p-message-error'
+        );
+    }
+
+    if (targetEl) {
+        const scrollTarget = targetEl.closest('.p-formfield, [data-pc-name="formfield"]') || targetEl.closest('.flex-col') || targetEl;
+        scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        const focusable = targetEl.matches('input, select, textarea')
+            ? targetEl
+            : targetEl.querySelector('input, select, textarea, [tabindex="0"]');
+
+        if (focusable && typeof focusable.focus === 'function') {
+            focusable.focus({ preventScroll: true });
+        }
+    }
+};
+
+const handleSubmit = async (e) => {
     console.log("Form Submit Event:", e);
 
     if (e.valid === false) {
         console.log("Form tidak valid, batalkan pengiriman:", e.errors);
+        await scrollToFirstInvalidField(e);
         return;
     }
 
     if (isEditMode.value) {
+        if (!paket.name || !String(paket.name).trim()) {
+            emit('submit-success', 'error', 'Validasi Gagal', 'Nama Paket harus diisi', 'info')
+
+            await scrollToField('name');
+            return;
+        }
+        if (!paket.kodePaket || !String(paket.kodePaket).trim()) {
+            emit('submit-success', 'error', 'Validasi Gagal', 'Kode RUP harus diisi', 'info')
+            await scrollToField('kodePaket');
+            return;
+        }
+        if (!paket.tahun) {
+            emit('submit-success', 'error', 'Validasi Gagal', 'Tahun Anggaran harus diisi', 'info')
+            await scrollToField('tahun');
+            return;
+        }
         handleSubmitUpdate(e);
     } else {
         handleSubmitAdd(e);
@@ -469,8 +577,33 @@ watch(() => props.paket, (newPaket) => {
             if (!paket.nilaiKontrak && newPaket.nilai_kontrak) paket.nilaiKontrak = newPaket.nilai_kontrak;
             if (!paket.nilaiPagu && newPaket.nilai_pagu) paket.nilaiPagu = newPaket.nilai_pagu;
 
+            // Format input date YYYY-MM-DD
+            if (newPaket.tanggalMulai) {
+                paket.tanggalMulai = String(newPaket.tanggalMulai).split('T')[0];
+            } else if (newPaket.tanggal_mulai) {
+                paket.tanggalMulai = String(newPaket.tanggal_mulai).split('T')[0];
+            }
+
+            if (newPaket.tanggalAkhir) {
+                paket.tanggalAkhir = String(newPaket.tanggalAkhir).split('T')[0];
+            } else if (newPaket.tanggal_akhir) {
+                paket.tanggalAkhir = String(newPaket.tanggal_akhir).split('T')[0];
+            }
+
+            if (newPaket.periodeKontrak !== undefined && newPaket.periodeKontrak !== null) {
+                paket.periodeKontrak = Number(newPaket.periodeKontrak);
+            } else if (newPaket.periode_kontrak !== undefined && newPaket.periode_kontrak !== null) {
+                paket.periodeKontrak = Number(newPaket.periode_kontrak);
+            }
+
+            if (!paket.produkAkhir && newPaket.produk_akhir) {
+                paket.produkAkhir = newPaket.produk_akhir;
+            }
+
             if (!paket.nextInputFisik && newPaket.nextInputFisik) paket.nextInputFisik = newPaket.nextInputFisik;
             if (!paket.statusProgress && newPaket.statusProgress) paket.statusProgress = newPaket.statusProgress;
+
+            originalData.value = { ...paket };
 
         }
 
@@ -593,7 +726,7 @@ onMounted(() => {
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Full width column -->
-                <FormField name="name" v-slot="$field" class="flex flex-col gap-0">
+                <FormField name="name" id="form-field-name" v-slot="$field" class="flex flex-col gap-0">
                     <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Nama
                         Paket Pekerjaan <span class="text-red-500">*</span></label>
                     <InputText placeholder="Masukkan nama paket..." name="name" v-model="paket.name" :pt="{
@@ -603,7 +736,7 @@ onMounted(() => {
                         {{ $field.error?.message }}
                     </Message>
                 </FormField>
-                <FormField name="kodePaket" v-slot="$field" class="flex flex-col gap-0">
+                <FormField name="kodePaket" id="form-field-kodePaket" v-slot="$field" class="flex flex-col gap-0">
                     <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Kode
                         RUP<span class="text-red-500">*</span></label>
                     <InputText placeholder="Masukkan Kode RUP..." name="kodePaket" v-model="paket.kodePaket" :pt="{
@@ -614,7 +747,7 @@ onMounted(() => {
                     </Message>
                 </FormField>
 
-                <FormField name="tahun" v-slot="$field" class="flex flex-col gap-0">
+                <FormField name="tahun" id="form-field-tahun" v-slot="$field" class="flex flex-col gap-0">
                     <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Tahun
                         Anggaran <span class="text-red-500">*</span></label>
 
@@ -805,6 +938,49 @@ onMounted(() => {
                         Kontrak</label>
                     <input type="text" placeholder="Nomor dokumen kontrak..." v-model="paket.noKontrak"
                         class="w-full bg-slate-50 text-sm font-semibold text-blue-950 rounded-xl px-4 py-3.5 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none placeholder-slate-300">
+                </div>
+
+                <!-- 1. TANGGAL MULAI -->
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                        Tanggal Mulai
+                    </label>
+                    <input type="date" v-model="paket.tanggalMulai"
+                        class="w-full bg-slate-50 text-sm font-semibold text-blue-950 rounded-xl px-4 py-3.5 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none" />
+                </div>
+
+                <!-- 2. TANGGAL AKHIR -->
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                        Tanggal Akhir
+                    </label>
+                    <input type="date" v-model="paket.tanggalAkhir"
+                        class="w-full bg-slate-50 text-sm font-semibold text-blue-950 rounded-xl px-4 py-3.5 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none" />
+                </div>
+
+                <!-- 3. PERIODE KONTRAK (HARI) -->
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                        Durasi Kontrak (Hari Kalender)
+                    </label>
+                    <div class="relative w-full">
+                        <input type="number" min="0" placeholder="Contoh: 180" v-model.number="paket.periodeKontrak"
+                            class="w-full bg-slate-50 text-sm font-semibold text-blue-950 rounded-xl pl-4 pr-16 py-3.5 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none placeholder-slate-300" />
+                        <span
+                            class="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-blue-950 pointer-events-none">
+                            Hari
+                        </span>
+                    </div>
+                </div>
+
+                <!-- 4. PRODUK AKHIR -->
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                        Produk Akhir
+                    </label>
+                    <input type="text" placeholder="Contoh: Jalan Aspal AC-WC STA 0+000 s/d 12+500"
+                        v-model="paket.produkAkhir"
+                        class="w-full bg-slate-50 text-sm font-semibold text-blue-950 rounded-xl px-4 py-3.5 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none placeholder-slate-300" />
                 </div>
 
 

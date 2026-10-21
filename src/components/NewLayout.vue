@@ -4,7 +4,8 @@ import { RouterView } from 'vue-router'
 </script>
 
 <template>
-    <div class="bg-slate-50 min-h-screen flex items-center justify-center p-4 text-slate-800 custom-font">
+    <div
+        class="bg-[url('/public/img/bg.png')] bg-cover bg-center min-h-screen flex items-center justify-center p-4 text-slate-800 custom-font">
         <RouterView />
     </div>
 </template>

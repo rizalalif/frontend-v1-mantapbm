@@ -61,6 +61,7 @@ const props = defineProps({
 
 import { useBreadcrumb } from '@/composables/useBreadcrumb';
 import AdendumTable from '../Adendum/AdendumTable.vue';
+import SerahTerimaForm from '../SerahTerima/SerahTerimaForm.vue';
 
 const { setPaketName } = useBreadcrumb();
 
@@ -183,6 +184,10 @@ watch(
                     :class="activeTab === 'adendum' ? 'bg-blue-950 text-white shadow-md' : 'text-slate-500 hover:text-blue-950'">
                     Adendum
                 </button>
+                <button @click="activeTab = 'stp'" class="px-6 py-2.5 rounded-full text-sm font-bold transition-all"
+                    :class="activeTab === 'stp' ? 'bg-blue-950 text-white shadow-md' : 'text-slate-500 hover:text-blue-950'">
+                    Serah Terima Pekerjaan
+                </button>
 
             </div>
 
@@ -238,6 +243,12 @@ watch(
                         :paket="paket" @submit-success="onDataAdded"
                         @refresh="async () => { paket = await getDetailPaket() }" />
 
+                </div>
+            </Transition>
+            <Transition name="fade">
+                <div id="tab-stp" class="tab-content" v-show="activeTab === 'stp'">
+                    <SerahTerimaForm :paket="paket" :paket-id="paket?.id" @submit-success="onDataAdded"
+                        @refresh="async () => { paket = await getDetailPaket() }" />
                 </div>
             </Transition>
         </div>

@@ -34,7 +34,7 @@
     </div>
 
     <!-- Content Utama -->
-    <div v-else class="min-h-screen p-4 md:p-6 lg:p-8 bg-slate-50/50 font-sans text-slate-800">
+    <div v-else class="min-h-screen p-4 md:p-6 lg:p-8 font-sans text-slate-800">
 
         <!-- ========================================== -->
         <!-- HEADER HALAMAN                             -->
@@ -133,10 +133,10 @@
                             <div class="flex justify-between text-xs mb-1">
                                 <span class="text-slate-500 font-medium">Target Rencana</span>
                                 <span class="font-bold text-slate-700">{{ statusProgressFisik.planPercentage.toFixed(2)
-                                }}%</span>
+                                    }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
-                                <div class="bg-blue-400 h-2 rounded-full"
+                                <div class="bg-blue-400 h-2 rounded-full max-w-full"
                                     :style="{ width: (statusProgressFisik.planPercentage || 0) + '%' }">
                                 </div>
                             </div>
@@ -148,10 +148,10 @@
                                 <span class="text-slate-500 font-medium">Realisasi Aktual</span>
                                 <span class="font-bold text-emerald-600">{{
                                     statusProgressFisik.actualPercentage.toFixed(2)
-                                }}%</span>
+                                    }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
-                                <div class="h-2 rounded-full transition-all"
+                                <div class="h-2 rounded-full transition-all max-w-full"
                                     :style="{ width: (statusProgressFisik.actualPercentage || 0) + '%' }"
                                     :class="(statusProgressFisik.actualPercentage || 0) >= (statusProgressFisik.planPercentage || 0) ? 'bg-emerald-500' : 'bg-red-500'">
                                 </div>
@@ -182,10 +182,10 @@
                                 <span class="text-slate-500 font-medium">Terhadap Pagu</span>
                                 <span class="font-bold text-slate-700">{{
                                     statusProgressKeuangan.planPercentage.toFixed(2)
-                                }}%</span>
+                                    }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
-                                <div class="bg-blue-400 h-2 rounded-full"
+                                <div class="bg-blue-400 h-2 rounded-full max-w-full"
                                     :style="{ width: (statusProgressKeuangan.planPercentage || 0) + '%' }">
                                 </div>
                             </div>
@@ -197,10 +197,10 @@
                                 <span class="text-slate-500 font-medium">Terhadap Kontrak</span>
                                 <span class="font-bold text-emerald-600">{{
                                     statusProgressKeuangan.actualPercentage.toFixed(2)
-                                }}%</span>
+                                    }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
-                                <div class="h-2 rounded-full transition-all"
+                                <div class="h-2 rounded-full transition-all max-w-full"
                                     :style="{ width: (statusProgressKeuangan.actualPercentage || 0) + '%' }"
                                     :class="(statusProgressKeuangan.actualPercentage || 0) >= (statusProgressKeuangan.planPercentage || 0) ? 'bg-emerald-500' : 'bg-red-500'">
                                 </div>
@@ -320,7 +320,7 @@
                                 <tr>
                                     <td class="border px-2 py-1px-2 py-1  border-gray-300">{{
                                         kendalaLastProgress.keterangan
-                                    }}</td>
+                                        }}</td>
                                     <td
                                         class="border px-2 py-1px-2 py-1 break-words whitespace-normal   border-gray-300">
                                         {{ kendalaLastProgress.tindakLanjut }}</td>
@@ -714,6 +714,10 @@ const setDataPaket = () => {
             deviationFisik: actualPercentage - totalPlanPercentageFisik,
         };
 
+        console.log("statusProgressFisik.value");
+        console.log(statusProgressFisik.value);
+
+
 
         fotoLastProgress.value.fotoTipikal = lastStatus.fotoTipikal || '';
         fotoLastProgress.value.fotoStreetMap = lastStatus.fotoStreetMap || '';
@@ -807,12 +811,32 @@ const formatRupiah = (angka) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(angka || 0);
 };
 
+// 1.1 Format Tanggal Indonesia
+const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    try {
+        const d = new Date(dateString);
+        if (isNaN(d.getTime())) return dateString;
+        return d.toLocaleDateString('id-ID', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric'
+        });
+    } catch {
+        return dateString;
+    }
+};
+
 // 2. Olah Data Teknis untuk Looping di Tabel Info
 const dataTeknisFormat = computed(() => {
     if (!detailPaket.value) return {};
     return {
         'Nilai Pagu': formatRupiah(detailPaket.value.nilaiPagu),
         'Nilai Kontrak': formatRupiah(detailPaket.value.nilaiKontrak),
+        'Tanggal Mulai': formatDate(detailPaket.value.tanggalMulai),
+        'Tanggal Akhir': formatDate(detailPaket.value.tanggalAkhir),
+        'Periode Kontrak': detailPaket.value.periodeKontrak ? `${detailPaket.value.periodeKontrak} Hari Kalender` : '-',
+        'Produk Akhir': detailPaket.value.produkAkhir || '-',
         'Nomor Kontrak': detailPaket.value.noKontrak || '-',
         'PPKom': detailPaket.value.ppkom || '-',
         'Penyedia Jasa': detailPaket.value.penyediaJasa || '-',
