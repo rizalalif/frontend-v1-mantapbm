@@ -133,7 +133,7 @@
                             <div class="flex justify-between text-xs mb-1">
                                 <span class="text-slate-500 font-medium">Target Rencana</span>
                                 <span class="font-bold text-slate-700">{{ statusProgressFisik.planPercentage.toFixed(2)
-                                    }}%</span>
+                                }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
                                 <div class="bg-blue-400 h-2 rounded-full"
@@ -148,7 +148,7 @@
                                 <span class="text-slate-500 font-medium">Realisasi Aktual</span>
                                 <span class="font-bold text-emerald-600">{{
                                     statusProgressFisik.actualPercentage.toFixed(2)
-                                    }}%</span>
+                                }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
                                 <div class="h-2 rounded-full transition-all"
@@ -182,7 +182,7 @@
                                 <span class="text-slate-500 font-medium">Terhadap Pagu</span>
                                 <span class="font-bold text-slate-700">{{
                                     statusProgressKeuangan.planPercentage.toFixed(2)
-                                    }}%</span>
+                                }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
                                 <div class="bg-blue-400 h-2 rounded-full"
@@ -197,7 +197,7 @@
                                 <span class="text-slate-500 font-medium">Terhadap Kontrak</span>
                                 <span class="font-bold text-emerald-600">{{
                                     statusProgressKeuangan.actualPercentage.toFixed(2)
-                                    }}%</span>
+                                }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
                                 <div class="h-2 rounded-full transition-all"
@@ -320,7 +320,7 @@
                                 <tr>
                                     <td class="border px-2 py-1px-2 py-1  border-gray-300">{{
                                         kendalaLastProgress.keterangan
-                                        }}</td>
+                                    }}</td>
                                     <td
                                         class="border px-2 py-1px-2 py-1 break-words whitespace-normal   border-gray-300">
                                         {{ kendalaLastProgress.tindakLanjut }}</td>
@@ -701,17 +701,18 @@ const setDataPaket = () => {
             }
         })
 
+        let actualPercentage = (totalActualNominalFisik / detailPaket.value.nilaiKontrak) * 100
+
+        if (detailPaket.value.nilaiKontrakAdendum !== null && detailPaket.value.nilaiKontrakAdendum !== undefined) {
+            actualPercentage = (totalActualNominalFisik / detailPaket.value.nilaiKontrakAdendum) * 100
+        }
+
         statusProgressFisik.value = {
             actualNominal: totalActualNominalFisik,
             planPercentage: totalPlanPercentageFisik,
-            actualPercentage: totalActualPercentageFisik,
-            deviationFisik: totalActualPercentageFisik - totalPlanPercentageFisik,
+            actualPercentage: actualPercentage,
+            deviationFisik: actualPercentage - totalPlanPercentageFisik,
         };
-
-
-        console.log("deviation")
-        console.log(totalActualPercentageFisik - totalPlanPercentageFisik)
-
 
 
         fotoLastProgress.value.fotoTipikal = lastStatus.fotoTipikal || '';
@@ -744,22 +745,32 @@ const setDataPaket = () => {
 
         progressKeuanganData.forEach(progress => {
             if (progress) {
-                totalActualNominalKeuangan += Number(progress.actualNominal) || 0;
+                totalActualNominalKeuangan += Number(progress.actualFinance) || 0;
                 totalPlanPercentageKeuangan += Number(progress.paguPercentage) || 0;
                 totalActualPercentageKeuangan += Number(progress.actualPercentage) || 0;
             }
         })
 
+        let actualPercentage = (totalActualNominalKeuangan / detailPaket.value.nilaiKontrak) * 100
+        if (detailPaket.value.nilaiKontrakAdendum !== null && detailPaket.value.nilaiKontrakAdendum !== undefined) {
+            actualPercentage = (totalActualNominalKeuangan / detailPaket.value.nilaiKontrakAdendum) * 100
+        }
+
         statusProgressKeuangan.value = {
             actualNominal: totalActualNominalKeuangan,
             planPercentage: totalPlanPercentageKeuangan,
-            actualPercentage: totalActualPercentageKeuangan
+            actualPercentage: actualPercentage,
+            deviationFinance: actualPercentage - totalPlanPercentageKeuangan,
         };
+
+
     } else {
         statusProgressKeuangan.value.actualPercentage = 0;
         statusProgressKeuangan.value.planPercentage = 0;
         statusProgressKeuangan.value.deviationFinance = 0;
     }
+    console.log("statusProgressKeuangan");
+    console.log(statusProgressKeuangan.value);
 }
 const documentationFoto = computed(() => {
     if (!detailPaket.value || !detailPaket.value.documentations || detailPaket.value.documentations.length === 0) return [];

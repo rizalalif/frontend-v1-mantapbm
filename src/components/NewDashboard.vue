@@ -567,8 +567,8 @@ const loadKurvaFisik = async () => {
             return;
         }
 
-        lastPercentage.value.fisik = aktual[aktual.filter(val => val !== null && val !== undefined).length -1]
-        lastPercentage.value.keuangan = aktualKeuangan[aktualKeuangan.filter(val => val !== null && val !== undefined).length -1]
+        lastPercentage.value.fisik = aktual[aktual.filter(val => val !== null && val !== undefined).length - 1]
+        lastPercentage.value.keuangan = aktualKeuangan[aktualKeuangan.filter(val => val !== null && val !== undefined).length - 1]
         chartFisikInstance = new Chart(chartFisikRef.value, {
             type: 'line',
             data: {
@@ -768,7 +768,7 @@ watch(
         console.log("tahun", tahun);
 
         fetchDashboardData(tahun);
-        loadKurvaUang()
+        // loadKurvaUang()
         loadKurvaFisik()
         loadMap()
         loadChartJenisPekerjaan()

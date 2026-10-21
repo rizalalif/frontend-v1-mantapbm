@@ -60,6 +60,7 @@ const props = defineProps({
 // }
 
 import { useBreadcrumb } from '@/composables/useBreadcrumb';
+import AdendumTable from '../Adendum/AdendumTable.vue';
 
 const { setPaketName } = useBreadcrumb();
 
@@ -178,6 +179,11 @@ watch(
                     Dokumentasi
                 </button>
 
+                <button @click="activeTab = 'adendum'" class="px-6 py-2.5 rounded-full text-sm font-bold transition-all"
+                    :class="activeTab === 'adendum' ? 'bg-blue-950 text-white shadow-md' : 'text-slate-500 hover:text-blue-950'">
+                    Adendum
+                </button>
+
             </div>
 
             <!-- ================= TAB A: INFORMASI ================= -->
@@ -221,6 +227,17 @@ watch(
 
                     <SummaryDetailPaket :paketId="paket?.id" :paket="paket"
                         @refresh="async () => { paket = await getDetailPaket() }" />
+                </div>
+            </Transition>
+
+
+            <!-- ================= TAB: ADENDUM ================= -->
+            <Transition name="fade">
+                <div id="tab-adendum" class="tab-content" v-show="activeTab === 'adendum'">
+                    <AdendumTable :adendum-list="paket?.riwayatAdendums" :paket-id="paket?.id"
+                        :paket="paket" @submit-success="onDataAdded"
+                        @refresh="async () => { paket = await getDetailPaket() }" />
+
                 </div>
             </Transition>
         </div>

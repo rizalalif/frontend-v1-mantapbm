@@ -152,9 +152,13 @@ watch(
 
         const payload = getChangedPayload(originalData.value, formProgress.value);
         if (Object.hasOwn(payload, 'actualNominal')) {
-            const nilaiKontrak = parseFloat(props.paket?.nilaiKontrak) || 0;
+            let nilaiKontrak = parseFloat(props.paket?.nilaiKontrak) || 0;
             const actual = parseFloat(payload.actualNominal) || 0;
             console.log("newActual", actual);
+
+            if (props.paket?.nilaiKontrakAdendum !== null && props.paket?.nilaiKontrakAdendum !== undefined) {
+                nilaiKontrak = parseFloat(props.paket?.nilaiKontrakAdendum) || 0;
+            }
 
             if (nilaiKontrak && nilaiKontrak > 0) {
 

@@ -98,11 +98,17 @@ watch(
     (newActual, oldActual) => {
         if (!modalVisible.value) return;
 
+        console.log("props.paket")
+        console.log(props.paket)
         const payload = getChangedPayload(originalData.value, formProgress.value);
         if (Object.hasOwn(payload, 'actualFinance')) {
-            const nilaiKontrak = parseFloat(props.paket?.nilaiKontrak);
+            let nilaiKontrak = parseFloat(props.paket?.nilaiKontrak);
             const nilaiPagu = parseFloat(props.paket?.nilaiPagu);
             const actual = parseFloat(payload.actualFinance);
+
+            if (props.paket?.nilaiKontrakAdendum !== null && props.paket?.nilaiKontrakAdendum !== undefined) {
+                nilaiKontrak = parseFloat(props.paket?.nilaiKontrakAdendum);
+            }
 
             if (nilaiKontrak && !isNaN(actual)) {
                 const actualPercentage = (actual / nilaiKontrak) * 100;
