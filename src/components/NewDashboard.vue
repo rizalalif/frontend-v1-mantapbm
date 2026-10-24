@@ -12,6 +12,10 @@ import PaketKritisCard from './Dashboard/PaketKritisCard.vue';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { formatRupiah } from '@/lib/Helper.js';
 import { Expand } from '@primeicons/vue';
+import html2canvas from 'html2canvas-pro';
+import { jsPDF } from 'jspdf';
+import bgImage from '@/assets/images/bg.webp';
+import { useDashboardExport } from '@/composables/useDashboardExport';
 
 Chart.register(ChartDataLabels);
 let mapInstance = null;
@@ -773,15 +777,199 @@ watch(
         loadMap()
         loadChartJenisPekerjaan()
         loadSummaryByJenisPekerjaan()
-
     },
     { deep: true, immediate: true }
 );
 
+// ============================================================
+// LOGIKA EXPORT PDF DASHBOARD 1 HALAMAN A4 PORTRAIT
+// ============================================================
+const dashboardPdfRef = ref(null);
+const { isGeneratingPdf, registerExportAction, unregisterExportAction } = useDashboardExport();
+
+// Fungsi untuk memastikan aset gambar ter-preload di cache peramban
+const preloadImage = (src) => {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = src;
+    });
+};
+
+const downloadPdf = async () => {
+    if (!dashboardPdfRef.value || isGeneratingPdf.value) return;
+
+    try {
+        isGeneratingPdf.value = true;
+
+        // 1. Pastikan gambar latar belakang telah ter-load
+        await preloadImage(bgImage);
+
+        // 2. Ambil tahun aktif untuk penamaan file dan judul
+        const tahun = route.query.tahun || new Date().getFullYear();
+        const filename = `MANTAP_BM_${tahun}.pdf`;
+
+        // 3. Render elemen menjadi kanvas resolusi tinggi dengan html2canvas-pro
+        const canvas = await html2canvas(dashboardPdfRef.value, {
+            scale: 2, // Kualitas cetak tajam (Retina 2x)
+            useCORS: true, // Izinkan ubin OpenStreetMap & gambar API
+            logging: false,
+            windowWidth: 960, // Viewport 960px proporsional dengan aspek rasio A4 Portrait
+            onclone: (clonedDoc, clonedElement) => {
+                // A. Tampilkan judul PDF khusus di DOM tiruan
+                const pdfHeader = clonedElement.querySelector('#dashboard-pdf-header') || clonedDoc.getElementById('dashboard-pdf-header');
+                if (pdfHeader) {
+                    pdfHeader.style.display = 'block';
+                }
+
+                // B. Sembunyikan kontrol zoom peta (+ / -) dan icon modal expand
+                const mapControls = clonedElement.querySelectorAll('.leaflet-control-zoom');
+                mapControls.forEach(ctrl => ctrl.style.display = 'none');
+
+                const expandIcons = clonedElement.querySelectorAll('svg.pi-expand, [class*="Expand"]');
+                expandIcons.forEach(icon => icon.style.display = 'none');
+
+                // C. Berikan gambar latar belakang bg.webp khusus pada lembar PDF
+                clonedElement.style.backgroundImage = `url(${bgImage})`;
+                clonedElement.style.backgroundSize = 'cover';
+                clonedElement.style.backgroundPosition = 'center';
+                clonedElement.style.padding = '18px 24px';
+                clonedElement.style.borderRadius = '16px';
+                clonedElement.style.minHeight = 'auto';
+
+                // D. Injeksi CSS penataan layout portrait yang proporsional
+                const printStyle = clonedDoc.createElement('style');
+                printStyle.innerHTML = `
+                    #printable-dashboard-content {
+                        width: 960px !important;
+                        max-width: 960px !important;
+                        min-height: auto !important;
+                        padding: 18px 24px !important;
+                        box-sizing: border-box !important;
+                    }
+                    #dashboard-pdf-header {
+                        display: block !important;
+                        margin-bottom: 14px !important;
+                        padding: 12px 16px !important;
+                    }
+                    #dashboard-pdf-header h1 {
+                        font-size: 22px !important;
+                        line-height: 1.2 !important;
+                    }
+
+                    /* 1. Summary Cards: 3 Kolom x 2 Baris (Mengisi ruang secara vertikal) */
+                    .grid.grid-cols-2.md\\:grid-cols-3.xl\\:grid-cols-6 {
+                        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+                        gap: 12px !important;
+                        margin-bottom: 14px !important;
+                    }
+
+                    /* 2. Middle Section: Ditata menjadi 2 Kolom Vertikal */
+                    .grid.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-3 {
+                        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                        gap: 12px !important;
+                        margin-bottom: 14px !important;
+                    }
+
+                    /* Grafik Progres: Lebar Penuh (Span 2 Kolom) dengan tinggi cukup */
+                    .md\\:col-start-1.md\\:col-end-3 {
+                        grid-column: span 2 !important;
+                        height: 270px !important;
+                        padding: 16px !important;
+                    }
+
+                    /* Paket Kritis: Kolom Kiri */
+                    .bg-white.rounded-\\[24px\\].shadow-\\[0_8px_30px_rgb\\(0\\,0\\,0\\,0\\.04\\)\\].border.border-slate-100.h-\\[300px\\] {
+                        height: 270px !important;
+                        padding: 16px !important;
+                    }
+
+                    /* Peta Sebaran: Kolom Kanan */
+                    .md\\:col-span-1 {
+                        grid-column: span 1 !important;
+                        height: 270px !important;
+                        padding: 16px !important;
+                    }
+                    .md\\:col-span-1 #map {
+                        min-height: 185px !important;
+                        height: 185px !important;
+                    }
+
+                    /* Summary By Jenis Pekerjaan: Lebar Penuh (Span 2 Kolom), tinggi dinamis agar tabel tidak meluber */
+                    .md\\:col-span-2.z-5 {
+                        grid-column: span 2 !important;
+                        height: auto !important;
+                        min-height: 220px !important;
+                        padding: 16px !important;
+                        overflow: hidden !important;
+                    }
+
+                    /* 3. Galeri Dokumentasi: 2 Kolom x 2 Baris */
+                    .grid.grid-cols-1.sm\\:grid-cols-2.lg\\:grid-cols-4 {
+                        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                        gap: 12px !important;
+                    }
+                    .h-44 {
+                        height: 130px !important;
+                    }
+
+                    .mb-6 { margin-bottom: 14px !important; }
+                    .mb-5 { margin-bottom: 10px !important; }
+                    .p-6 { padding: 14px 16px !important; }
+                `;
+                clonedDoc.head.appendChild(printStyle);
+            }
+        });
+
+        // 4. Inisialisasi dokumen jsPDF KERTAS A4 PORTRAIT
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const pdf = new jsPDF({
+            orientation: 'portrait', // PORTRAIT SESUAI INSTRUKSI
+            unit: 'mm',
+            format: 'a4'
+        });
+
+        const pageWidth = pdf.internal.pageSize.getWidth();   // 210 mm
+        const pageHeight = pdf.internal.pageSize.getHeight(); // 297 mm
+        const margin = 6; // Margin 6 mm
+
+        const printableWidth = pageWidth - (margin * 2);   // 198 mm
+        const printableHeight = pageHeight - (margin * 2); // 285 mm
+
+        // 5. Hitung rasio seragam (fit-to-page) agar pas tepat 1 halaman portrait
+        const ratio = Math.min(printableWidth / canvas.width, printableHeight / canvas.height);
+        const finalWidth = canvas.width * ratio;
+        const finalHeight = canvas.height * ratio;
+
+        // 6. Posisikan di tengah kertas secara horizontal dan vertikal
+        const posX = margin + (printableWidth - finalWidth) / 2;
+        const posY = margin + (printableHeight - finalHeight) / 2;
+
+        // 7. Tambahkan ke PDF tepat 1 halaman tanpa loop addPage
+        pdf.addImage(imgData, 'JPEG', posX, posY, finalWidth, finalHeight, undefined, 'FAST');
+        pdf.save(filename);
+
+    } catch (error) {
+        console.error('Gagal membuat PDF Dashboard:', error);
+    } finally {
+        isGeneratingPdf.value = false;
+    }
+};
+
+// Registrasi aksi cetak saat komponen terpasang di layar
+onMounted(() => {
+    registerExportAction(downloadPdf);
+});
+
+// Bersihkan aksi saat pengguna berpindah halaman
+onUnmounted(() => {
+    unregisterExportAction();
+});
 </script>
 
 <template>
-    <div id="chartModal"
+    <div id="chartModal" data-html2canvas-ignore="true"
         class="fixed inset-0 z-[100] bg-slate-900 bg-opacity-80 hidden flex items-center justify-center p-4 md:p-8 backdrop-blur-sm transition-opacity">
         <div
             class="bg-white rounded-xl shadow-2xl w-full h-full max-w-7xl max-h-[90vh] flex flex-col overflow-hidden animate-bounce-short">
@@ -802,7 +990,24 @@ watch(
 
         </div>
     </div>
-    <div>
+    
+    <!-- KONTAINER UTAMA DASHBOARD (Target Capture PDF) -->
+    <div ref="dashboardPdfRef" id="printable-dashboard-content" class="min-h-screen">
+
+        <!-- ======================================================== -->
+        <!-- JUDUL DI PALING ATAS DOKUMEN PDF                         -->
+        <!-- (Hidden di Web, Hanya Muncul di Hasil Cetak PDF)         -->
+        <!-- ======================================================== -->
+        <div id="dashboard-pdf-header" style="display: none;" 
+            class="mb-4 text-center border-b-2 border-blue-950 pb-3 bg-white/95 rounded-2xl p-4 shadow-xs">
+            <h1 class="text-2xl font-black text-blue-950 uppercase tracking-tight">
+                MANTAP BM {{ route.query.tahun || new Date().getFullYear() }}
+            </h1>
+            <p class="text-xs font-bold text-slate-500 mt-1 uppercase tracking-wider">
+                Laporan Ringkasan Pemantauan Proyek & Status Capaian
+            </p>
+        </div>
+
         <!-- ROW 1: SUMMARY CARDS (6 Kolom) -->
         <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-5 mb-6">
             <!-- 1. Total Paket -->

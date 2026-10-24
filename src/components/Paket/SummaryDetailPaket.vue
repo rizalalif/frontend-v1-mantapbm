@@ -33,11 +33,34 @@
         <p class="text-slate-500 text-sm">Menunggu data paket dari parent...</p>
     </div>
 
-    <!-- Content Utama -->
-    <div v-else class="min-h-screen p-4 md:p-6 lg:p-8 font-sans text-slate-800">
+    <!-- Content Utama (Ref ditargetkan khusus untuk export PDF) -->
+    <div v-else 
+        ref="summaryPdfRef" 
+        id="printable-summary-content" 
+        class="min-h-screen p-6 md:p-8 font-sans text-slate-800">
 
         <!-- ========================================== -->
-        <!-- HEADER HALAMAN                             -->
+        <!-- JUDUL DI PALING ATAS DOKUMEN PDF           -->
+        <!-- (Hidden di Web, Hanya Muncul di Hasil PDF) -->
+        <!-- ========================================== -->
+        <div id="pdf-header-title" style="display: none;" class="mb-6 text-center border-b-2 border-blue-950 pb-4 bg-white/90 rounded-xl p-4 shadow-xs">
+            <h1 class="text-2xl font-black text-blue-950 uppercase tracking-tight">
+                Paket {{ detailPaket?.name || paket?.name || detailPaket?.nama_paket || paket?.nama_paket || 'Pekerjaan' }}
+            </h1>
+            <div v-if="detailPaket?.noKontrak || paket?.noKontrak || detailPaket?.kodePaket || paket?.kodePaket" 
+                class="flex items-center justify-center gap-3 text-xs font-bold text-slate-600 mt-2">
+                <span v-if="detailPaket?.kodePaket || paket?.kodePaket">
+                    Kode RUP / Paket: {{ detailPaket?.kodePaket || paket?.kodePaket }}
+                </span>
+                <span v-if="(detailPaket?.kodePaket || paket?.kodePaket) && (detailPaket?.noKontrak || paket?.noKontrak)">•</span>
+                <span v-if="detailPaket?.noKontrak || paket?.noKontrak">
+                    No. Kontrak: {{ detailPaket?.noKontrak || paket?.noKontrak }}
+                </span>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- HEADER HALAMAN + TOMBOL DOWNLOAD PDF       -->
         <!-- ========================================== -->
         <div class="mb-8 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
             <div>
@@ -46,10 +69,29 @@
                     <span class="text-sm!" :class="getStatusBadgeClass(paket?.statusKondisi || 'Status N/A')">{{
                         capitalizeFirstLetter(paket?.statusKondisi || 'Status N/A') }}</span>
                 </div>
-                <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">Detail Pemantauan Proyek</h1>
+                <h2 class="text-2xl font-extrabold tracking-tight text-slate-900">Detail Pemantauan Proyek</h2>
                 <p class="text-sm text-slate-500 mt-1"></p>
             </div>
 
+            <!-- Tombol Action Download PDF (Abaikan saat html2canvas capture) -->
+            <div class="flex items-center gap-3" data-html2canvas-ignore="true">
+                <button type="button" 
+                    @click="downloadPdf" 
+                    :disabled="isGeneratingPdf"
+                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-950 hover:bg-blue-900 text-white text-xs font-bold rounded-xl shadow-sm transition-all hover:shadow-md cursor-pointer group active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed">
+                    <!-- Icon Spinner saat loading -->
+                    <svg v-if="isGeneratingPdf" class="animate-spin -ml-1 mr-1 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <!-- Icon Download saat normal -->
+                    <svg v-else class="w-4 h-4 text-orange-400 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>{{ isGeneratingPdf ? 'Menyiapkan PDF...' : 'Export PDF' }}</span>
+                </button>
+            </div>
         </div>
 
         <!-- ========================================== -->
@@ -268,16 +310,58 @@
                 </div>
             </div>
 
-            <!-- Dokumentasi (1 Gambar) -->
-            <div class="lg:col-span-4 bg-white rounded-xl shadow-sm border border-slate-200/60 flex flex-col h-[380px]">
+            <!-- Dokumentasi (Grid 4 Foto Terakhir Tanpa Keterangan) -->
+            <div class="lg:col-span-5 bg-white rounded-xl shadow-sm border border-slate-200/60 flex flex-col h-[380px]">
                 <div
                     class="p-4 border-b border-slate-100 flex-none bg-slate-50/50 rounded-t-xl flex justify-between items-center">
                     <h2 class="text-sm font-bold text-slate-800">Dokumentasi</h2>
+                    <span v-if="latestDocumentations.length > 0" class="text-[11px] font-semibold text-slate-400">
+                        {{ latestDocumentations.length }} foto terbaru
+                    </span>
                 </div>
-                <div class="p-4 flex-1 overflow-hidden relative">
-                    <img v-if="fotoLastProgress.fotoDokumentasi"
-                        :src="`${backendUrl}${fotoLastProgress.fotoDokumentasi}`"
-                        class="w-full h-full object-cover rounded-lg" />
+                
+                <div class="p-3 flex-1 overflow-hidden relative">
+                    <!-- Kondisi 1: Jika data dokumentasi tersedia -->
+                    <div v-if="latestDocumentations.length > 0" class="grid grid-cols-2 grid-rows-2 gap-2 w-full h-full">
+                        <div v-for="(item, index) in latestDocumentations" :key="item?.id || index"
+                            class="relative w-full h-full rounded-lg overflow-hidden bg-slate-100 border border-slate-100 group cursor-pointer shadow-xs hover:shadow-md transition-all duration-300"
+                            @click="bukaModalDokumentasi(item)">
+                            
+                            <!-- Format Gambar -->
+                            <img v-if="item?.fileType === 'image' || !item?.fileType"
+                                :src="getDocMediaUrl(item?.fileName)"
+                                :alt="item?.fileName || 'Dokumentasi'"
+                                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                @error="handleImageError" />
+
+                            <!-- Format Video -->
+                            <div v-else-if="item?.fileType === 'video'" class="w-full h-full relative">
+                                <video :src="getDocMediaUrl(item?.fileUrl || item?.fileName)"
+                                    class="w-full h-full object-cover" preload="metadata"></video>
+                                <div class="absolute inset-0 bg-black/30 flex items-center justify-center">
+                                    <div class="bg-white/90 rounded-full p-2 shadow-md">
+                                        <svg class="w-4 h-4 text-blue-950" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd"
+                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                                                clip-rule="evenodd"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Hover Overlay Icon Zoom -->
+                            <div class="absolute inset-0 bg-blue-950/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                <div class="bg-white/90 rounded-full p-2 shadow-md text-blue-950">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kondisi 2: Empty State Jika Belum Ada Foto -->
                     <div v-else class="flex flex-col items-center justify-center h-full text-slate-400">
                         <svg class="w-8 h-8 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -289,10 +373,9 @@
             </div>
 
             <!-- Permasalahan & Tindak Lanjut -->
-            <div class="lg:col-span-5 bg-white rounded-xl shadow-sm border border-slate-200/60 flex flex-col h-[380px]">
+            <div class="lg:col-span-4 bg-white rounded-xl shadow-sm border border-slate-200/60 flex flex-col h-[380px]">
                 <div class="p-4 border-b border-slate-100 flex-none bg-slate-50/50 rounded-t-xl">
-                    <h2 class="text-sm font-bold text-slate-800">Permasalahan dan Tindak Lanjut {{
-                        kendalaLastProgress.keterangan == "" }} </h2>
+                    <h2 class="text-sm font-bold text-slate-800">Permasalahan dan Tindak Lanjut </h2>
                 </div>
                 <div class="p-4 flex-1 overflow-y-auto custom-scrollbar-y w-full h-full">
                     <div v-if="!kendalaLastProgress.keterangan || kendalaLastProgress.keterangan == ''"
@@ -377,6 +460,34 @@
 
         </div>
     </div>
+
+    <!-- Lightbox Modal Preview (Sesuai Documentation.vue:L94-L128) -->
+    <Transition name="fade">
+        <div v-if="isModalOpen"
+            class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 lg:p-10"
+            @click.self="tutupModalDokumentasi">
+
+            <!-- Tombol Tutup Silang di Kanan Atas -->
+            <button @click="tutupModalDokumentasi"
+                class="absolute top-6 right-6 text-white/70 hover:text-white bg-black/50 hover:bg-black/70 p-2.5 rounded-full z-10 transition-colors cursor-pointer">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+
+            <!-- Container Media Modal (Hanya Gambar/Video Sesuai Instruksi Tanpa Keterangan) -->
+            <div class="relative max-w-5xl w-full max-h-full flex flex-col items-center">
+                <img v-if="selectedDocItem?.fileType === 'image' || !selectedDocItem?.fileType"
+                    :src="getDocMediaUrl(selectedDocItem?.fileName)"
+                    class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+                    @error="handleImageError" />
+
+                <video v-else-if="selectedDocItem?.fileType === 'video'"
+                    :src="getDocMediaUrl(selectedDocItem?.fileUrl || selectedDocItem?.fileName)"
+                    controls autoplay class="max-w-full max-h-[85vh] rounded-lg shadow-2xl"></video>
+            </div>
+        </div>
+    </Transition>
 </template>
 
 <script setup>
@@ -386,6 +497,9 @@ import Chart from 'chart.js/auto';
 import { useAuth } from '@/lib/Auth';
 import { useRoute } from 'vue-router';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
+import html2canvas from 'html2canvas-pro';
+import { jsPDF } from 'jspdf';
+import bgImage from '@/assets/images/bg.webp';
 
 const props = defineProps({
     paketId: {
@@ -406,12 +520,165 @@ const lastPercentage = ref({
 })
 
 const backendUrl = ref(`${BASE_URL}/images/progress-fisik/`);
+// Base URL khusus file dokumentasi (mengikuti Documentation.vue)
+const docBackendUrl = ref(`${BASE_URL}/images/`);
+
+const getDocMediaUrl = (fileName) => {
+    if (!fileName) return '';
+    if (fileName.startsWith('http://') || fileName.startsWith('https://')) {
+        return fileName;
+    }
+    return `${docBackendUrl.value}${fileName}`;
+};
+
+const handleImageError = (e) => {
+    e.target.src = 'https://via.placeholder.com/400x300?text=Gambar+Gagal+Dimuat';
+};
+
+// State Modal Lightbox Preview
+const isModalOpen = ref(false);
+const selectedDocItem = ref(null);
+
+const bukaModalDokumentasi = (item) => {
+    if (!item) return;
+    selectedDocItem.value = item;
+    isModalOpen.value = true;
+    document.body.style.overflow = 'hidden';
+};
+
+const tutupModalDokumentasi = () => {
+    isModalOpen.value = false;
+    selectedDocItem.value = null;
+    document.body.style.overflow = 'auto';
+};
+
 let mapInstance = null;
 const emit = defineEmits(['refresh']);
 const auth = useAuth();
 const isLoading = ref(false);
 const isError = ref(false);
 const errorMessage = ref('');
+
+// ==========================================
+// LOGIKA EXPORT PDF 1 HALAMAN A4 (FIT TO PAGE)
+// ==========================================
+const summaryPdfRef = ref(null);
+const isGeneratingPdf = ref(false);
+
+const preloadImage = (src) => {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = src;
+    });
+};
+
+const downloadPdf = async () => {
+    if (!summaryPdfRef.value || isGeneratingPdf.value) return;
+
+    try {
+        isGeneratingPdf.value = true;
+
+        // 1. Pastikan background image ter-load di memori cache browser
+        await preloadImage(bgImage);
+
+        // 2. Ambil kode paket untuk penamaan file PDF
+        const kode = detailPaket.value?.kodePaket || props.paket?.kodePaket || 'Proyek';
+        const cleanKode = String(kode).replace(/[^a-zA-Z0-9_-]/g, '_');
+        const filename = `Detail_Pemantauan_${cleanKode}.pdf`;
+
+        // 3. Tangkap snapshot elemen dengan html2canvas-pro
+        const canvas = await html2canvas(summaryPdfRef.value, {
+            scale: 2, // Resolusi tinggi (retina)
+            useCORS: true,
+            logging: false,
+            windowWidth: 1440, // Standar desktop 1440px agar konten melebar proporsional
+            onclone: (clonedDoc, clonedElement) => {
+                // A. Tampilkan judul khusus PDF di DOM tiruan (di web tetap tersembunyi)
+                const pdfHeader = clonedElement.querySelector('#pdf-header-title') || clonedDoc.getElementById('pdf-header-title');
+                if (pdfHeader) {
+                    pdfHeader.style.display = 'block';
+                }
+
+                // B. Terapkan background bg.webp khusus pada dokumen tiruan PDF
+                clonedElement.style.backgroundImage = `url(${bgImage})`;
+                clonedElement.style.backgroundSize = 'cover';
+                clonedElement.style.backgroundPosition = 'center';
+                clonedElement.style.padding = '14px 20px';
+                clonedElement.style.borderRadius = '12px';
+                clonedElement.style.minHeight = 'auto';
+
+                // C. Suntikkan CSS print-compact khusus ke clonedDoc
+                // Menormalisasi tinggi kartu dan jarak agar rasio aspek pas dan sebanding
+                const styleTag = clonedDoc.createElement('style');
+                styleTag.innerHTML = `
+                    #printable-summary-content {
+                        width: 1440px !important;
+                        max-width: 1440px !important;
+                        min-height: auto !important;
+                        padding: 14px 20px !important;
+                        box-sizing: border-box !important;
+                    }
+                    #pdf-header-title {
+                        display: block !important;
+                        margin-bottom: 8px !important;
+                        padding: 8px 14px !important;
+                    }
+                    #pdf-header-title h1 {
+                        font-size: 18px !important;
+                        line-height: 1.2 !important;
+                    }
+                    .mb-8 { margin-bottom: 8px !important; }
+                    .mb-6 { margin-bottom: 8px !important; }
+                    .mb-4 { margin-bottom: 6px !important; }
+                    .gap-6 { gap: 10px !important; }
+                    .gap-4 { gap: 8px !important; }
+                    .p-5 { padding: 10px 12px !important; }
+                    .p-4 { padding: 8px 10px !important; }
+                    
+                    /* Ketinggian kartu dinormalisasi agar pas dan proporsional */
+                    .h-\\[380px\\] { height: 195px !important; }
+                    .h-\\[300px\\] { height: 175px !important; }
+                    .min-h-\\[250px\\] { min-height: 165px !important; height: 165px !important; }
+                    
+                    /* Skala font tetap sangat tajam dan proporsional */
+                    .text-2xl { font-size: 17px !important; }
+                    .text-base { font-size: 13px !important; }
+                    .text-sm { font-size: 11px !important; }
+                    .text-xs { font-size: 10px !important; }
+                    .text-\\[11px\\] { font-size: 9.5px !important; }
+                `;
+                clonedDoc.head.appendChild(styleTag);
+            }
+        });
+
+        // 4. Inisialisasi dokumen jsPDF dengan ukuran kertas SEBANDING (Proporsional) dengan konten
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const margin = 6; // Margin 6 mm merata di semua sisi
+
+        // Menggunakan basis tinggi standar 210 mm (setara A4), lebar kertas dihitung sebanding persis dengan kanvas
+        const targetHeight = 210;
+        const contentHeight = targetHeight - (margin * 2); // 198 mm
+        const contentWidth = (canvas.width * contentHeight) / canvas.height;
+        const targetWidth = contentWidth + (margin * 2);
+
+        const pdf = new jsPDF({
+            orientation: targetWidth >= targetHeight ? 'landscape' : 'portrait',
+            unit: 'mm',
+            format: [targetWidth, targetHeight]
+        });
+
+        // 5. Render tepat 1 halaman, margin pas merata 6mm tanpa space kosong berlebih di kiri & kanan
+        pdf.addImage(imgData, 'JPEG', margin, margin, contentWidth, contentHeight, undefined, 'FAST');
+        pdf.save(filename);
+
+    } catch (err) {
+        console.error('Gagal membuat PDF 1 halaman:', err);
+    } finally {
+        isGeneratingPdf.value = false;
+    }
+};
 
 let chartKeuanganInstance = null;
 let chartFisikInstance = null;
@@ -776,14 +1043,20 @@ const setDataPaket = () => {
     console.log("statusProgressKeuangan");
     console.log(statusProgressKeuangan.value);
 }
-const documentationFoto = computed(() => {
-    if (!detailPaket.value || !detailPaket.value.documentations || detailPaket.value.documentations.length === 0) return [];
+// Mengambil maksimal 4 data dokumentasi terakhir
+const latestDocumentations = computed(() => {
+    const rawDocs = detailPaket.value?.documentations || props.paket?.documentations || [];
+    if (!Array.isArray(rawDocs) || rawDocs.length === 0) return [];
 
-    // Ambil data array ke-[0] (karena take: 1 mengembalikan array berisi 1 objek)
-    const dataTerakhir = detailPaket.value.documentations[0];
-    if (!dataTerakhir || !dataTerakhir.fileName) return [];
+    // Salin dan urutkan dari data terbaru berdasarkan tanggal atau ID
+    const sorted = [...rawDocs].sort((a, b) => {
+        const timeA = new Date(b.date || b.createdAt || 0).getTime();
+        const timeB = new Date(a.date || a.createdAt || 0).getTime();
+        return timeA - timeB;
+    });
 
-    return dataTerakhir;
+    // Ambil maksimal 4 item
+    return sorted.slice(0, 4);
 });
 
 
@@ -979,5 +1252,16 @@ function capitalizeFirstLetter(str) {
     /* slate-900 */
     margin-top: 1rem;
     margin-bottom: 0.5rem;
+}
+
+/* Animasi Transisi Fade untuk Modal Lightbox */
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
 }
 </style>

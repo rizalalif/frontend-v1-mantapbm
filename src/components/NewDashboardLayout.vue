@@ -7,7 +7,9 @@ import { onClickOutside } from '@vueuse/core';
 import { useBreakpoints, breakpointsTailwind } from '@vueuse/core';
 import Breadcrumb from 'primevue/breadcrumb';
 import { useBreadcrumb } from '@/composables/useBreadcrumb';
+import { useDashboardExport } from '@/composables/useDashboardExport';
 
+const { isGeneratingPdf, triggerExport } = useDashboardExport();
 const breakpoints = useBreakpoints(breakpointsTailwind)
 
 // Check if screen is greater than or equal to 'sm' (640px)
@@ -205,6 +207,24 @@ onUnmounted(() => {
                             // },
 
                         }" @change="setTahun" />
+
+                    <!-- Tombol Action Cetak PDF Dashboard -->
+                    <button type="button" 
+                        @click="triggerExport" 
+                        :disabled="isGeneratingPdf"
+                        class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white/10! hover:bg-blue-500 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
+                        <!-- Spinner saat proses render -->
+                        <svg v-if="isGeneratingPdf" class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <!-- Icon Download PDF -->
+                        <svg v-else class="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>{{ isGeneratingPdf ? 'Menyiapkan PDF...' : 'Export PDF' }}</span>
+                    </button>
                     <!-- <Select :showClear="auth.userRole.value === 'admin'" optionLabel="name" optionValue="id"
                         placeholder="Pilih PIC..." filter filterPlaceholder="Cari nama PIC..." :pt="{
                             root: 'w-full !bg-slate-50 !rounded-xl !px-2 !py-1.5 !border-none !shadow-none focus:!ring-2 focus:!ring-orange-500 focus:!outline-none cursor-pointer',
