@@ -1,6 +1,6 @@
 <template>
     <FileUpload ref="fu" name="demo[]" url="/api/upload" accept="image/*" :showUploadButton="false" :fileLimit="1"
-        @select="onSelect" @remove="onRemove" @clear="onRemove" :maxFileSize="1000000" mode="advanced"
+        @select="onSelect" @remove="onRemove" @clear="onRemove" :maxFileSize="5242880" mode="advanced"
         invalidFileSizeMessage="Ukuran file maksimal adalah 5MB."
         invalidFileTypeMessage="Hanya diperbolehkan format gambar." :pt="{ root: { class: 'border-0!' } }">
         <!-- <template #header="{ files, chooseCallback, uploadCallback }">

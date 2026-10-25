@@ -124,7 +124,7 @@ const formatSize = (bytes) => {
                                             clip-rule="evenodd"></path>
                                     </svg>
                                     <span class="text-[10px] truncate w-11/12 text-center">{{ fileObj.file.name
-                                    }}</span>
+                                        }}</span>
                                 </div>
                             </div>
                         </div>
@@ -328,7 +328,7 @@ const uploadFiles = async () => {
         emit('submit', 'success', 'Sukses', 'Dokumentasi berhasil diunggah!');
     } catch (error) {
         console.error(error);
-        emit('submit', 'error', 'Error', 'Terjadi kesalahan saat mengunggah!');
+        emit('submit', 'error', 'Error', error.response?.data?.message || 'Terjadi Kesalahan saat mengunggah!');
 
     } finally {
         isUploading.value = false;
