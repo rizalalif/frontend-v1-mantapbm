@@ -26,11 +26,9 @@ const isEditMode = computed(() => !!route.params.kodePaket);
 const isVisibleSubmitUpdate = computed(() => {
     // if (!isEditMode.value) return false
     const payload = getChangedPayload(originalData.value, paket);
-    console.log('Payload Perubahan:', payload);
 
     // Cek apakah ada perubahan sama sekali
     if (Object.keys(payload).length === 0) {
-        console.log("payload kosong");
         return false
     }
     return true
@@ -171,7 +169,6 @@ const searchSumberDana = (event) => {
 
 const searchPic = (event) => {
     if (!event.query || !event.query.trim().length) {
-        console.log("pic", picOptions.value);
         const users = picOptions.value.map((user) => {
             return user.fullName
         })
@@ -199,7 +196,6 @@ const getPic = async () => {
                 name: auth.state.user.fullName || auth.state.user.email || 'Tanpa Nama'
             }];
         }
-        console.log("picOptions 🚀", picOptions.value);
     } catch (error) {
         console.error("Error fetching users for PIC:", error);
     }
@@ -409,11 +405,9 @@ const handleSubmitAdd = async () => {
     paket.paketUserId = paket.paketUserId ? paket.paketUserId : null;
     const payload = sanitizePayload(paket);
     delete payload.nextInputFisik;
-    console.log("paketForm 🚀🚀🚀", payload);
 
     try {
         const response = await api.post('/paket', payload);
-        console.log("responsed ata 🚀🚀🚀🚀", response.data);
         router.push({ name: 'paket-detail', params: { kodePaket: response.data.data.kodePaket } })
         emit('submit-success', 'success', 'Sukses', response.data.message, 'dashboard')
     } catch (error) {
@@ -422,14 +416,11 @@ const handleSubmitAdd = async () => {
 }
 const handleSubmitUpdate = async () => {
     paket.paketUserId = paket.paketUserId ? paket.paketUserId : null;
-    console.log("paketForm 🚀🚀🚀", paket);
 
     const payload = getChangedPayload(originalData.value, paket);
-    console.log('Payload Perubahan:', payload);
 
     // Cek apakah ada perubahan sama sekali
     if (Object.keys(payload).length === 0) {
-        console.log("payload kosong");
         return;
     }
 
@@ -445,7 +436,6 @@ const handleSubmitUpdate = async () => {
 
     try {
         const response = await api.put(`/paket/${props.paket.id}`, payload);
-        console.log("responsed ata 🚀🚀🚀🚀", response.data.message);
 
         router.push({ name: 'paket-detail', params: { kodePaket: response.data.data.kodePaket } })
         emit('submit-success', 'success', 'Sukses', response.data.message, 'dashboard')
@@ -513,10 +503,8 @@ const scrollToFirstInvalidField = async (e) => {
 };
 
 const handleSubmit = async (e) => {
-    console.log("Form Submit Event:", e);
 
     if (e.valid === false) {
-        console.log("Form tidak valid, batalkan pengiriman:", e.errors);
         await scrollToFirstInvalidField(e);
         return;
     }
@@ -554,7 +542,6 @@ const setPaketUser = async () => {
 // Watcher untuk mengisi data form secara otomatis dari props.paket ketika data paket diterima
 watch(() => props.paket, (newPaket) => {
     if (isEditMode.value) {
-        console.log("newPaket🚀🚀🚀", props.paket);
         if (newPaket && Object.keys(newPaket).length > 0) {
             Object.assign(paket, newPaket);
             if (newPaket.statusPaket) {
@@ -620,8 +607,6 @@ watch(() => props.paket, (newPaket) => {
 watch(
     () => paket.paketUserId,
     (newPicId, oldPicId) => {
-        console.log("newPicId", newPicId);
-        console.log("oldPicId", oldPicId);
 
         // Jangan timpa status jika sedang berada dalam mode Edit dan watcher ini dipicu saat load awal
         if (isEditMode.value && oldPicId === undefined) return;
@@ -668,9 +653,7 @@ const handleRealtimeInput = (event) => {
 };
 onMounted(() => {
     getPic()
-    console.log();
 
-    console.log("props.paket di AddPaket:", props?.paket);
 });
 </script>
 

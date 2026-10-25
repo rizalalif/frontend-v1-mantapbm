@@ -28,7 +28,7 @@ async function login() {
 
         router.push('/dashboard');
     } catch (error) {
-        console.log(error);
+        console.error(error);
     }
 }
 
@@ -44,7 +44,6 @@ async function register(params) {
         }
 
         const response = await api.post("/users/register", payload);
-        console.log("responsed ata 🚀🚀🚀🚀", response.data);
 
     } catch (error) {
         console.error(error);

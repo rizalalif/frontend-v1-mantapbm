@@ -49,12 +49,10 @@ const cekJadwalPengingat = () => {
 
     // Jika hari ini adalah JUMAT (5)
     if (indexHari === 0) {
-        console.log('day' + indexHari);
 
         // Cek apakah user sudah menutup notifikasi hari ini
         const tanggalString = hariIni.toDateString(); // Contoh output: "Fri Sep 25 2026"
         const lastDismissed = localStorage.getItem('dismissedProgressReminder');
-        console.log('dismiss', lastDismissed);
 
         // Jika data di localStorage BUKAN tanggal hari ini, berarti belum di-close hari ini
         if (lastDismissed !== tanggalString) {
@@ -77,7 +75,6 @@ const tutupPengingat = () => {
 
 // Jalankan pengecekan saat komponen dimuat
 onMounted(() => {
-    console.log('reminder');
 
     cekJadwalPengingat();
     showInfo

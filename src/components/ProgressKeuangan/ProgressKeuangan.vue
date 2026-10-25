@@ -114,7 +114,6 @@ const handleExportExcel = () => {
 };
 
 async function getDetailProgressKeuangan() {
-    console.log("selectedId🚀🚀", props.kodePaket);
 
     try {
         isLoading.value = true;

@@ -25,7 +25,6 @@ async function login() {
 
         router.push('/dashboard');
     } catch (error) {
-        console.log(error);
         toast.add({ severity: 'error', summary: 'Login Gagal', detail: error.response.data.message, life: 3000 });
     } finally {
         isLoading.value = false;

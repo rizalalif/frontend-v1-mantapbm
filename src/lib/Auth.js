@@ -29,7 +29,6 @@ export const useAuth = () => {
     // Actions
     const login = async (kredensial) => {
         const response = await api.post('/users/login', kredensial);
-        console.log("Response login:", response.data);
 
         const resBody = response.data;
         const resData = resBody.data || resBody;

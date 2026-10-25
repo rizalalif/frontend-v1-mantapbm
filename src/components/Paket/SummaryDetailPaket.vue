@@ -716,7 +716,6 @@ const loadMap = async () => {
     } else if (detailPaket.value.statusKondisi == 'kritis') {
         statusColor = '#FF0000'
     }
-    console.log('onlocation', detailPaket.value);
 
     const location = [{
         latitude: detailPaket.value.latitude,
@@ -767,7 +766,6 @@ const loadMap = async () => {
 }
 
 const loadKurvaUang = async () => {
-    console.log("paket id", props.paket?.id);
 
     try {
         const response = await api.get(`/dashboard-paket/${props.paket?.id}/data-kurva`);
@@ -782,10 +780,7 @@ const loadKurvaUang = async () => {
         lastPercentage.value.keuangan = aktualKeuangan[aktualKeuangan.filter((item) => item !== null).length - 1];
         lastPercentage.value.fisik = aktualFisik[aktualFisik.filter((item) => item !== null).length - 1];
 
-        console.log("aktual");
 
-        console.log(aktualFisik);
-        console.log(aktualKeuangan);
 
         Chart.register(ChartDataLabels)
         chartKeuanganInstance = new Chart(chartUangRef.value, {
@@ -847,9 +842,6 @@ const loadKurvaUang = async () => {
                                 return '';
                             }
                             if (context.dataIndex !== lastValueIndex - 1) {
-                                console.log('last');
-                                console.log(context.dataIndex);
-                                console.log(lastValueIndex);
 
                                 return '';
                             }
@@ -865,7 +857,6 @@ const loadKurvaUang = async () => {
 };
 
 // const loadKurvaFisik = async () => {
-//     console.log(detailPaket.value);
 
 //     try {
 //         const token = auth.state?.token || localStorage.getItem("token");
@@ -934,7 +925,6 @@ const fetchDetailPaket = async () => {
         const response = await api.get(`/paket/kode/${paketId.value}`);
         detailPaket.value = response.data.data;
 
-        console.log("response.data", response.data.data);
 
     } catch (error) {
         console.error("Gagal mengambil detail paket:", error);
@@ -948,8 +938,6 @@ const setDataPaket = () => {
 
     // Handle physical progress data
     const progressFisikData = detailPaket.value.progressFisiks || [];
-    console.log('progreee fisik data');
-    console.log(progressFisikData.length > 0);
     if (progressFisikData.length > 0) {
         const lastStatus = progressFisikData[progressFisikData.length - 1];
         // statusProgressFisik.value.actualPercentage = lastStatus.actualPercentage || 0;
@@ -981,8 +969,6 @@ const setDataPaket = () => {
             deviationFisik: actualPercentage - totalPlanPercentageFisik,
         };
 
-        console.log("statusProgressFisik.value");
-        console.log(statusProgressFisik.value);
 
 
 
@@ -1040,8 +1026,6 @@ const setDataPaket = () => {
         statusProgressKeuangan.value.planPercentage = 0;
         statusProgressKeuangan.value.deviationFinance = 0;
     }
-    console.log("statusProgressKeuangan");
-    console.log(statusProgressKeuangan.value);
 }
 // Mengambil maksimal 4 data dokumentasi terakhir
 const latestDocumentations = computed(() => {

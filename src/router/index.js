@@ -172,8 +172,6 @@ router.beforeEach((to, from, next) => {
   // Perhatikan penggunaan .value karena isLoggedIn & userRole adalah computed property
   const isAuth = auth.isLoggedIn.value;
   const userRole = auth.userRole.value;
-  console.log("auth", isAuth);
-  console.log("role", userRole);
 
   // 1. Jika halaman butuh login dan user belum login
   if (to.meta.requiresAuth && !isAuth) {
@@ -191,13 +189,11 @@ router.beforeEach((to, from, next) => {
       }
       // 2. Jika halaman butuh role khusus, cek apakah role user ada di dalam daftar
       if (to.meta.roles && !to.meta.roles.includes(userRole)) {
-        console.log("unzauthirized");
         return next({ name: 'unauthorized' });
       }
       // 3. Lolos semua pengecekan
       next();
     } catch (error) {
-      console.log(error);
       next();
     }
   } else {

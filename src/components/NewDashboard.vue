@@ -344,8 +344,6 @@ function closeModal() {
 
 const fetchDashboardData = async () => {
     isLoading.value = true;
-    console.log('route query');
-    console.log(route.query);
 
     const tahun = route.query.tahun || new Date().getFullYear();
 
@@ -362,7 +360,6 @@ const fetchDashboardData = async () => {
             await api.get("/documentation"),
         ]);
 
-        console.log("Data total: ", totalData.data);
 
         dashboardData.value.totalPaket = totalData.data.data;
         dashboardData.value.berjalan = paketBerjalan.data.data;
@@ -372,7 +369,6 @@ const fetchDashboardData = async () => {
         dashboardData.value.percentageKeuangan = percentageKeuangan.data.data;
         dashboardData.value.dokumentasiTerbaru = dokumentasi.data.data
         dashboardData.value.paketKritis = paketKritis.data.data.map((paket, i) => {
-            console.log("paketKristisMap", paket);
 
             let keterangan = null;
             let tglLaporan = null;
@@ -389,10 +385,6 @@ const fetchDashboardData = async () => {
         });
 
 
-        console.log("paketKritis.data.data", paketKritis.data.data);
-        console.log("docs.data.data", dokumentasi.data.data);
-        console.log("dashboardData.value.data", dashboardData.value.paketKritis);
-        console.log("percentage_keuangan", percentageKeuangan.data);
 
         dashboardData.value.kurvaUang.chartKeuanganKey++;
     } catch (error) {
@@ -414,13 +406,11 @@ function getRandomColor() {
 
 const loadSummaryByJenisPekerjaan = async () => {
 
-    console.log('loaded jenis');
     const tahun = route.query.tahun || new Date().getFullYear();
 
     try {
         const response = await api.get("/dashboard/summary-jenis", { params: { tahun } })
         dashboardData.value.summaryJenisPekerjaan = response.data.data;
-        console.log("response.data.data jenis pekerjaan", response);
     } catch (error) {
         console.error("Gagal memuat kurva jenis", error);
     }
@@ -428,7 +418,6 @@ const loadSummaryByJenisPekerjaan = async () => {
 
 const loadChartJenisPekerjaan = async () => {
 
-    console.log('loaded jenis');
     const tahun = route.query.tahun || new Date().getFullYear();
 
     try {
@@ -438,7 +427,6 @@ const loadChartJenisPekerjaan = async () => {
             chartKategoriInstance.destroy();
             chartKategoriInstance = null;
         }
-        console.log("response.data.data jenis pekerjaan", response.data.data);
 
         const { labels, data } = response.data.data
         const backgroundColors = Array.from({ length: labels.length }, getRandomColor);
@@ -466,12 +454,10 @@ const loadChartJenisPekerjaan = async () => {
 }
 
 const loadKurvaUang = async () => {
-    console.log('loaded kurva uang');
     const tahun = route.query.tahun || new Date().getFullYear();
     try {
         const response = await api.get("/dashboard/kurva-uang", { params: { tahun } })
         if (chartKeuanganInstance) {
-            console.log("ada");
 
             chartKeuanganInstance.destroy();
             chartKeuanganInstance = null;
@@ -535,9 +521,6 @@ const loadKurvaUang = async () => {
                                 return '';
                             }
                             if (context.dataIndex !== lastValueIndex - 1) {
-                                console.log('last');
-                                console.log(context.dataIndex);
-                                console.log(lastValueIndex);
 
                                 return '';
                             }
@@ -553,7 +536,6 @@ const loadKurvaUang = async () => {
 }
 
 const loadKurvaFisik = async () => {
-    console.log('loaded kurva fisik');
 
     try {
         const tahun = route.query.tahun || new Date().getFullYear();
@@ -637,9 +619,6 @@ const loadKurvaFisik = async () => {
                                 return '';
                             }
                             if (context.dataIndex !== lastValueIndex - 1) {
-                                console.log('last');
-                                console.log(context.dataIndex);
-                                console.log(lastValueIndex);
 
                                 return '';
                             }
@@ -698,7 +677,6 @@ const loadMap = async () => {
         }
     ];
 
-    console.log('loaded map');
 
     const tahun = route.query.tahun || new Date().getFullYear();
     try {
@@ -721,7 +699,6 @@ const loadMap = async () => {
 
 
             paketData.forEach(proyek => {
-                console.log(proyek.statusKondisi);
 
                 L.circleMarker([proyek.latitude, proyek.longitude], {
                     radius: 7,
@@ -764,12 +741,10 @@ function formatWithCustomSeparators(number, thousandSep, decimalSep) {
 }
 
 // Example: Use a space ' ' for thousands and a dot '.' for decimals
-// console.log(formatWithCustomSeparators(number, '.', ','));
 
 watch(
     () => route.query.tahun,
     (tahun) => {
-        console.log("tahun", tahun);
 
         fetchDashboardData(tahun);
         // loadKurvaUang()

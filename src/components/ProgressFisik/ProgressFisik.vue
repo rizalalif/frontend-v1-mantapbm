@@ -81,7 +81,6 @@ async function getDetailProgressFisik() {
                 }
             });
 
-            console.log("progress paket fisik 🚀🚀", response);
             progressFisik.value = response.data.data;
         }
     } catch (error) {

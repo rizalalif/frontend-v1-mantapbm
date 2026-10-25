@@ -9,7 +9,6 @@ const props = defineProps({
 const emit = defineEmits(['refresh']);
 
 onMounted(() => {
-    console.log('paket ProgressKeuanganForm🚀🚀🚀', props.paket?.progressKeuangans);
 });
 </script>
 

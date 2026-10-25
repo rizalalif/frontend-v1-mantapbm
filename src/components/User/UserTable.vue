@@ -137,7 +137,6 @@ const applySuggestion = (fullText) => {
 
     // ✅ LANGKAH BARU: Segera trigger pencarian
     // Ini akan langsung memfilter daftar paket berdasarkan kata kunci yang dipilih
-    console.log('🚀 Pencarian diterapkan untuk:', fullText);
 };
 
 const dynamicSuggestions = computed(() => {
@@ -185,8 +184,6 @@ const filteredUsers = computed(() => {
         if (!filterValue) return props.users;
 
         return props.users.filter(user => {
-            console.log("filterKey", filterKey);
-            console.log(" search", user);
 
             // Mapping filterKey ke atribut asli objek dari database
             switch (filterKey) {

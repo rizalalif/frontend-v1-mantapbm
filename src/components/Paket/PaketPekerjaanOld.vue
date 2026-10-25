@@ -138,7 +138,6 @@ const applySuggestion = (fullText) => {
 
     // ✅ LANGKAH BARU: Segera trigger pencarian
     // Ini akan langsung memfilter daftar paket berdasarkan kata kunci yang dipilih
-    console.log('🚀 Pencarian diterapkan untuk:', fullText);
 };
 
 // Fungsi untuk memasukkan format "property: " saat user mengklik overlay
@@ -173,7 +172,6 @@ const filteredPaket = computed(() => {
         if (!filterValue) return pakets.value;
 
         return pakets.value.filter(paket => {
-            console.log("filterKey", filterKey);
 
             // Mapping filterKey ke atribut asli objek dari database
             switch (filterKey) {
@@ -271,8 +269,6 @@ async function getPaket() {
     try {
         loading.value = true;
         error.value = false;
-        console.log("auth.userRole", auth.userRole.value);
-        console.log("auth.userId", auth.state.user.id);
 
         if (auth.isLoggedIn) {
             const response = await api.get('/paket', {
@@ -283,7 +279,6 @@ async function getPaket() {
                 }
             });
 
-            console.log("data paket 🚀🚀", response);
             pakets.value = response.data.data;
         }
     } catch (error) {
@@ -297,7 +292,6 @@ async function getPaket() {
 
 const toDetail = (paketId) => {
     router.push({ name: 'paket-detail', params: { kodePaket: paketId } })
-    console.log(paketId);
 
 }
 
@@ -313,7 +307,6 @@ const formatRupiah = (val) => {
 const deletePaket = async (id) => {
     try {
         const response = await api.delete(`/paket/${id}`);
-        // console.log("Delete paket success 🚀:", response.data);
         await getPaket();
         // emit('refresh');
     } catch (error) {
@@ -338,7 +331,6 @@ const hitungTotalKontrakGrup = (namaGrup) => {
 }
 
 onMounted(() => {
-    console.log("mounted");
 
     getPaket();
 });

@@ -88,7 +88,6 @@ const selectedYear = ref(new Date().getFullYear())
 const isDropdownOpen = ref(false);
 
 const toggleDropdown = () => {
-    console.log('click');
 
     isDropdownOpen.value = !isDropdownOpen.value;
 };
@@ -105,7 +104,6 @@ const userInitials = computed(() => {
 });
 
 const filteredPageList = computed(() => {
-    console.log(auth.userRole.value);
 
     if (auth.userRole.value == "admin") {
         return pageList.value
@@ -154,7 +152,6 @@ onMounted(() => {
     document.addEventListener('click', handleClickOutside);
     document.addEventListener('keydown', onKeyDown);
 
-    console.log("currentBreakpoint", currentBreakpoint.value);
 
 });
 

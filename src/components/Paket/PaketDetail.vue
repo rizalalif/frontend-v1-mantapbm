@@ -66,7 +66,6 @@ import SerahTerimaForm from '../SerahTerima/SerahTerimaForm.vue';
 const { setPaketName } = useBreadcrumb();
 
 async function getDetailPaket() {
-    console.log("selectedId🚀🚀", props.kodePaket);
 
     try {
         isLoading.value = true;
@@ -74,7 +73,6 @@ async function getDetailPaket() {
         if (auth.isLoggedIn) {
             const response = await api.get(`/paket/kode/${props.kodePaket}`);
 
-            console.log("data paket 🚀🚀", response);
             const data = response.data.data;
             if (data) {
                 setPaketName(data.name || data.namaPaket || data.kodePaket);
@@ -91,7 +89,6 @@ async function getDetailPaket() {
 }
 
 const onDataAdded = async (severity, status, message, tabTarget) => {
-    console.log("message", message);
 
     paket.value = await getDetailPaket()
     activeTab.value = tabTarget
@@ -105,7 +102,6 @@ const onDataAdded = async (severity, status, message, tabTarget) => {
 }
 
 onMounted(async () => {
-    console.log('route.name', route.name)
     if (route.name == 'paket-detail') {
 
         isAdd.value = false;
@@ -116,7 +112,6 @@ onMounted(async () => {
         isAdd.value = true;
         activeTab.value = 'info'
     }
-    console.log('paketONDetail🚀🚀🚀', paket.value);
 
 });
 
@@ -130,7 +125,6 @@ watch(
             // paksa tab pindah ke 'dashboard' secara instan.
             activeTab.value = 'dashboard';
 
-            console.log('isAdd🚀🚀🚀', isAdd.value);
 
         }
     },

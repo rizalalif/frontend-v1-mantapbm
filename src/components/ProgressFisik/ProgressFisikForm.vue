@@ -3,7 +3,6 @@ const props = defineProps({
     paket: Object
 })
 
-console.log("paket in prop", props.paket)
 </script>
 <template>
     <!-- Form Input Progres Fisik -->

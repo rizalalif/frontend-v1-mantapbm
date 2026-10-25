@@ -271,7 +271,6 @@ const openEditModal = (progress) => {
     }
 };
 const getProgress = (data) => {
-    // console.log('progress data', data);
     props.progressList.push(data)
     emit('refresh');
 };
@@ -279,7 +278,6 @@ const getProgress = (data) => {
 const deleteProgress = async (id) => {
     try {
         const response = await api.delete(`/progress-keuangan/${id}`);
-        console.log("Delete progress success 🚀:", response.data);
         emit('refresh');
     } catch (error) {
         console.error("Error deleting progress:", error.response?.data || error.message);
@@ -288,7 +286,6 @@ const deleteProgress = async (id) => {
 };
 
 // watch(() => props.progressList, () => {
-//     console.log('progressList di Table:', props.progressList);
 //     // progressListTable.value = props.progressList;
 //     let totalActualFinance = 0;
 //     let totalDeviationFinance = 0;
@@ -303,7 +300,6 @@ const deleteProgress = async (id) => {
 //     });
 //     progressListTable.value = { data: props.progressList, totalActualFinance, totalDeviationFinance, totalPaguPercentage, totalActualPercentage };
 
-//     console.log("progressListTable", progressListTable.value);
 
 // }, { immediate: true });
 

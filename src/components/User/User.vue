@@ -23,7 +23,6 @@ async function getUsers() {
         if (auth.isLoggedIn) {
             const response = await api.get("/users");
 
-            console.log("data paket 🚀🚀", response);
             users.value = response.data.data?.users;
         }
     } catch (error) {
@@ -38,7 +37,6 @@ async function getUsers() {
 const deleteUser = async (id) => {
     try {
         const response = await api.delete(`/users/${id}`);
-        // console.log("Delete paket success 🚀:", response.data);
         await getUsers();
         // emit('refresh');
     } catch (error) {

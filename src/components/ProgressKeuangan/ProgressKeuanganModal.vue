@@ -98,8 +98,6 @@ watch(
     (newActual, oldActual) => {
         if (!modalVisible.value) return;
 
-        console.log("props.paket")
-        console.log(props.paket)
         const payload = getChangedPayload(originalData.value, formProgress.value);
         if (Object.hasOwn(payload, 'actualFinance')) {
             let nilaiKontrak = parseFloat(props.paket?.nilaiKontrak);
@@ -126,8 +124,6 @@ const submitForm = async () => {
     try {
         isLoading.value = true;
         const targetId = props.paketId || props.paket?.id || formProgress.value.paketProgressKeuanganId;
-        console.log(targetId, "targetId");
-        console.log(editingId.value, "editingId");
         if (!targetId && !editingId.value) {
             alert("Paket ID tidak ditemukan! Harap pilih paket terlebih dahulu.");
             return;
@@ -155,7 +151,6 @@ const submitForm = async () => {
         const payloadToSend = isUpdate ? getChangedPayload(originalData.value, fullPayload) : fullPayload;
 
         if (isUpdate && Object.keys(payloadToSend).length === 0) {
-            console.log("Tidak ada perubahan data.");
             modalVisible.value = false;
             return;
         }
@@ -164,13 +159,11 @@ const submitForm = async () => {
             ? `/progress-keuangan/${editingId.value}`
             : `/progress-keuangan`;
 
-        console.log(`Submitting progress keuangan (${isUpdate ? 'PUT' : 'POST'}) 🚀:`, payloadToSend);
 
         const response = isUpdate
             ? await api.put(url, payloadToSend)
             : await api.post(url, payloadToSend);
 
-        console.log("Progress Keuangan berhasil disimpan 🚀:", response.data);
         modalVisible.value = false;
         emit("saved", response.data);
     } catch (error) {

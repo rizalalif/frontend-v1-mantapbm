@@ -289,7 +289,6 @@ const openEditModal = (progress) => {
 };
 
 const getProgress = (data) => {
-    // console.log('progress data', data);
     props.progressList.push(data)
     emit('refresh');
 };
@@ -297,7 +296,6 @@ const getProgress = (data) => {
 const deleteProgress = async (id) => {
     try {
         const response = await api.delete(`/progress-fisik/${id}`);
-        console.log("Delete progress success 🚀:", response.data);
         emit('refresh');
     } catch (error) {
         console.error("Error deleting progress:", error.response?.data || error.message);

@@ -101,7 +101,6 @@ const formatSize = (bytes) => {
 };
 
 watch(() => props.existingUrl, (newValue) => {
-    console.log("newValue", props.existingUrl);
     if (newValue) {
         path.value = BASE_URL + "/images/progress-fisik/" + props.modelValue;
     } else {

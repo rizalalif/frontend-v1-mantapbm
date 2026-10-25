@@ -63,9 +63,7 @@ onMounted(async () => {
 
         paketData.forEach(proyek => {
             if (proyek.latitude != "" && proyek.longitude != "") {
-                console.log('proy', proyek);
 
-                console.log(parseFloat(proyek.latitude), parseFloat(proyek.longitude));
                 L.circleMarker([parseFloat(proyek.latitude), parseFloat(proyek.longitude)], {
                     radius: 7,
                     fillColor: '#3b82f6',
@@ -139,7 +137,6 @@ const loadMap = async () => {
         }
     ];
 
-    console.log('loaded map');
 
     const tahun = route.query.tahun || new Date().getFullYear();
     try {
@@ -162,7 +159,6 @@ const loadMap = async () => {
 
 
             paketData.forEach(proyek => {
-                console.log(proyek.statusKondisi);
 
                 L.circleMarker([proyek.latitude, proyek.longitude], {
                     radius: 7,

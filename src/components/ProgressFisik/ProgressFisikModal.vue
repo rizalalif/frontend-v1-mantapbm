@@ -23,11 +23,9 @@ const isVisibleSubmitUpdate = computed(() => {
 
     if (!isEditMode.value) return false
     const payload = getChangedPayload(originalData.value, formProgress.value);
-    console.log('Payload Perubahan:', payload);
 
     // Cek apakah ada perubahan sama sekali
     if (Object.keys(payload).length === 0) {
-        console.log("payload kosong");
         return false
     }
     return true
@@ -72,9 +70,6 @@ const formProgress = ref({
 
 // Method untuk membuka modal (bisa untuk Tambah atau Edit)
 const openModal = (item = null) => {
-    console.log("item", item);
-    console.log("lasProgress");
-    console.log(lastProgressId.value);
 
     if (item && item.id) {
         editingId.value = item.id;
@@ -103,14 +98,10 @@ const openModal = (item = null) => {
             fotoDokumentasi: item.fotoDokumentasi ? BASE_IMAGE_URL + item.fotoDokumentasi : null,
         };
 
-        console.log("existingFoto");
-        console.log(existingFotos.value);
 
         originalData.value = { ...normalizedItem };
         formProgress.value = { ...normalizedItem };
 
-        console.log("originalData");
-        console.log(originalData.value);
         // selectedStatus.value = item.status || "Sesuai Target";
     } else {
         editingId.value = null;
@@ -154,7 +145,6 @@ watch(
         if (Object.hasOwn(payload, 'actualNominal')) {
             let nilaiKontrak = parseFloat(props.paket?.nilaiKontrak) || 0;
             const actual = parseFloat(payload.actualNominal) || 0;
-            console.log("newActual", actual);
 
             if (props.paket?.nilaiKontrakAdendum !== null && props.paket?.nilaiKontrakAdendum !== undefined) {
                 nilaiKontrak = parseFloat(props.paket?.nilaiKontrakAdendum) || 0;
@@ -165,7 +155,6 @@ watch(
 
                 const actualPercentage = (actual / nilaiKontrak) * 100;
                 formProgress.value.actualPercentage = parseFloat(actualPercentage.toFixed(2));
-                console.log("formPercentage", formProgress.value.actualPercentage);
             }
         }
     }
@@ -196,18 +185,14 @@ watch(
                 formProgress.value.status = "Sesuai Target";
             }
         }
-        console.log("formProgress.value.status", formProgress.value.status);
 
     }, { immediate: true }
 );
 
 const submitForm = async () => {
-    console.log("lastPorgress", lastProgressId.value);
     try {
         isLoading.value = true;
         const targetId = props.paketId || props.paket?.id || formProgress.value.paketProgressFisikId;
-        console.log(targetId, "targetId");
-        console.log(editingId.value, "editingId");
         if (!targetId && !editingId.value) {
             alert("Paket ID tidak ditemukan! Harap pilih paket terlebih dahulu.");
             return;
@@ -243,13 +228,11 @@ const submitForm = async () => {
         }
 
 
-        console.log('fullPayload', fullPayload);
 
         const isUpdate = !!editingId.value;
         const payloadToSend = isUpdate ? getChangedPayload(originalData.value, fullPayload) : fullPayload;
 
         if (isUpdate && Object.keys(payloadToSend).length === 0) {
-            console.log("Tidak ada perubahan data.");
             modalVisible.value = false;
             return;
         }
@@ -258,15 +241,12 @@ const submitForm = async () => {
             ? `/progress-fisik/${editingId.value}`
             : `/progress-fisik`;
 
-        console.log(`Submitting progress fisik (${isUpdate ? 'PUT' : 'POST'}) 🚀:`, payloadToSend);
 
         const response = isUpdate
             ? await api.put(url, payloadToSend, { headers: { "Content-Type": "multipart/form-data" } })
             : await api.post(url, payloadToSend, { headers: { "Content-Type": "multipart/form-data" } });
 
         let statusKondisiPaket = props.paket.statusKondisi;
-        console.log("response");
-        console.log(response);
 
         if (isUpdate && lastProgressId.value !== editingId.value) {
             modalVisible.value = false;
@@ -280,11 +260,9 @@ const submitForm = async () => {
             statusKondisiPaket = 'aman'
             if (formProgress.value.deviationFisik <= 0 && formProgress.value.deviationFisik > -10) {
                 statusKondisiPaket = 'perhatian'; // Deviasi lebih buruk dari -10%
-                console.log('perhatian status');
 
             } else if (formProgress.value.deviationFisik < -10) {
                 statusKondisiPaket = 'kritis'; // Deviasi antara -0.1% s/d -10%
-                console.log('kritis status');
 
             }
         } else if (formProgress.value.planPercentage > 70 && formProgress.value.planPercentage <= 100) {
@@ -317,14 +295,9 @@ const submitForm = async () => {
             futureNextInput = initNextInput
         }
 
-        console.log('future', futureNextInput.toDateString())
-        console.log("isPaketUpdated", statusKondisiPaket);
-        console.log(statusKondisiPaket, "statusKondisiPaket");
         const updatePaketStatus = await api.put(`/paket/${props.paket?.id}`, { statusKondisi: statusKondisiPaket, nextInputFisik: futureNextInput });
 
-        console.log(updatePaketStatus, "updatePaketStatus");
 
-        console.log("Progress Fisik berhasil disimpan 🚀:", response.data);
         modalVisible.value = false;
         emit("saved", response.data.data);
     } catch (error) {

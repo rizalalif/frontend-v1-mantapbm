@@ -287,7 +287,6 @@ const batalUpload = () => {
 };
 const uploadFiles = async () => {
     // 1. Validasi Input
-    console.log('formDataInput', formDataInput);
 
     if (!formDataInput.tanggal) {
         emit('submit', 'error', 'Mohon isi Tanggal Pengambilan terlebih dahulu!');
@@ -315,7 +314,6 @@ const uploadFiles = async () => {
     });
 
     for (let [key, value] of formData.entries()) {
-        console.log(key, ':', value);
     }
 
 

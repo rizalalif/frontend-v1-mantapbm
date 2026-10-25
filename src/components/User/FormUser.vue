@@ -57,7 +57,6 @@ const isMatchChangePassword = computed(() => {
 //     // LOGIKA PERBANDINGAN:
 //     // Hanya lakukan pengecekan jika sedang berada di mode Register (!isEdit)
 //     if (!isEdit.value) {
-//         console.log(data.password === data.confirmPassword);
 //         return data.password === data.confirmPassword;
 //     }
 //     return true; // Jika mode edit, selalu lolos (karena password tidak diubah di sini)
@@ -153,11 +152,9 @@ const { setUserName } = useBreadcrumb();
 
 const fetchUserData = async () => {
     if (!isEdit.value) return; // Abaikan jika mode Register
-    console.log('user selected', userId.value);
 
     try {
         const response = await api.get(`/users/${userId.value}`);
-        console.log('user selected', response.data);
         const { id, fullName, email, role, createdAt } = response.data.data.users;
         if (fullName) {
             setUserName(fullName);
@@ -201,7 +198,6 @@ const submitUtama = async (e) => {
             payload = e.values
         }
 
-        console.log("payload", payload);
         // return
         const method = isEdit.value ? 'put' : 'post';
         await api[method](url, payload);

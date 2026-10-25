@@ -109,7 +109,6 @@ const modalRef = ref(null);
 // Filter data berdasarkan noAdendum
 const filteredAdendumList = computed(() => {
 
-    console.log("props.adendumList", props.adendumList);
     if (!props.adendumList || !Array.isArray(props.adendumList)) return [];
 
     return props.adendumList.filter(item => {

@@ -149,7 +149,6 @@ const applySuggestion = (fullText) => {
 
     // ✅ LANGKAH BARU: Segera trigger pencarian
     // Ini akan langsung memfilter daftar paket berdasarkan kata kunci yang dipilih
-    console.log('🚀 Pencarian diterapkan untuk:', fullText);
 };
 
 // Fungsi untuk memasukkan format "property: " saat user mengklik overlay
@@ -184,8 +183,6 @@ const filteredPaket = computed(() => {
         if (!filterValue) return pakets.value;
 
         return pakets.value.filter(paket => {
-            console.log("filterKey", filterKey);
-            console.log(" search", paket);
 
             // Mapping filterKey ke atribut asli objek dari database
             switch (filterKey) {
@@ -284,8 +281,6 @@ async function getPaket() {
     try {
         await new Promise((resolve) => setTimeout(resolve, 1000))
         error.value = false;
-        console.log("auth.userRole", auth.userRole.value);
-        console.log("auth.userId", auth.state.user.id);
 
         if (auth.isLoggedIn) {
             const response = await api.get("/paket", {
@@ -296,7 +291,6 @@ async function getPaket() {
                 }
             });
 
-            console.log("data paket 🚀🚀", response);
             pakets.value = response.data.data;
         }
     } catch (error) {
@@ -309,19 +303,15 @@ async function getPaket() {
 }
 
 const toDetail = (event) => {
-    console.log("event", event);
 
     const paketId = event.data.kodePaket;
     if (!paketId) return;
     router.push({ name: 'paket-detail', params: { kodePaket: paketId } })
-    console.log(paketId);
 
 }
 
 const formatRupiah = (val) => {
     if (val === null || val === undefined || isNaN(val)) return 'Rp 0';
-    console.log("currentBreakpoint", currentBreakpoint.value);
-    console.log("isMobile", isMobile.value);
 
     return new Intl.NumberFormat('id-ID', {
         // style: 'currency',
@@ -335,7 +325,6 @@ const formatRupiah = (val) => {
 const deletePaket = async (id) => {
     try {
         const response = await api.delete(`/paket/${id}`);
-        // console.log("Delete paket success 🚀:", response.data);
         await getPaket();
         // emit('refresh');
     } catch (error) {
@@ -399,7 +388,6 @@ function capitalizeFirstLetter(str) {
 }
 
 onMounted(() => {
-    console.log("mounted");
 
     getPaket();
 });
