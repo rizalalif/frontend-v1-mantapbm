@@ -1,11 +1,12 @@
 <script setup>
 import { RouterView } from 'vue-router'
-
+import bgImage from '@/assets/images/bg.webp'
 </script>
 
 <template>
     <div
-        class="bg-[url('/public/img/bg.png')] bg-cover bg-center min-h-screen flex items-center justify-center p-4 text-slate-800 custom-font">
+        :style="{ backgroundImage: `url(${bgImage})` }"
+        class="bg-[url('../assets/images/bg.webp')] bg-cover bg-center min-h-screen flex items-center justify-center p-4 text-slate-800 custom-font">
         <RouterView />
     </div>
 </template>
