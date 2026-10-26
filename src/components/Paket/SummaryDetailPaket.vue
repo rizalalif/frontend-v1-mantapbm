@@ -906,6 +906,14 @@ const loadKurvaUang = async () => {
 
 const route = useRoute();
 const paketId = ref(route.params.kodePaket); // Asumsi route Anda /paket/:id
+const jenisPengadaan = {
+    e_purchasing: 'E-Purchasing',
+    pengadaan_langsung: 'Pengadaan Langsung',
+    penunjukan_langsung: 'Penunjukan Langsung',
+    seleksi: 'Seleksi',
+    tender: 'Tender',
+    swakelola: 'Swakelola',
+}
 const fotoLastProgress = ref({
     fotoTipikal: '',
     fotoStreetMap: '',
@@ -1104,6 +1112,7 @@ const dataTeknisFormat = computed(() => {
         'Kelurahan': detailPaket.value.kelurahan || '-',
         'Sumber Dana': detailPaket.value.sumberDana || '-',
         'Tahun': detailPaket.value.tahun || '-',
+        'Jenis Pengadaan': detailPaket.value.jenisPengadaan ? jenisPengadaan[detailPaket.value.jenisPengadaan] : '-',
     };
 });
 
