@@ -778,8 +778,8 @@ onMounted(() => {
                     <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Sub
                         Program Kegiatan</label>
                     <Select v-model="paket.jenisPekerjaan" :options="jenisPekerjaanOptions" optionLabel="label"
-                        optionValue="value" placeholder="Pilih Jenis Pekerjaan..."
-                        filterPlaceholder="Cari Nama Pekerjaan..." :pt="{
+                        optionValue="value" placeholder="Pilih Sub Program Kegiatan..."
+                        filterPlaceholder="Cari Nama Sub Program Kegiatan..." :pt="{
                             root: 'w-full !bg-slate-50 !rounded-xl !px-2 !py-1.5 !border-none !shadow-none focus:!ring-2 focus:!ring-orange-500 focus:!outline-none cursor-pointer',
                             label: '!text-sm !font-bold !text-blue-950',
                             item: { class: '!text-sm !font-semibold !text-blue-950' }
