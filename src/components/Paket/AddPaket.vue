@@ -132,6 +132,14 @@ const statusOptions = ref([
     { label: 'Perhatian', value: 'perhatian' },
     { label: 'Kritis', value: 'kritis' }
 ]);
+const jenisPengadaanOptions = ref([
+    { label: 'E-Purchasing', value: 'e_purchasing' },
+    { label: 'Pengadaan Langsung', value: 'pengadaan_langsung' },
+    { label: 'Penunjukan Langsung', value: 'penunjukan_langsung' },
+    { label: 'Seleksi', value: 'seleksi' },
+    { label: 'Tender', value: 'tender' },
+    { label: 'Swakelola', value: 'swakelola' }
+]);
 const picOptions = ref([]);
 const filteredSumberDana = ref([]);
 const selectedSumberDana = ref(null);
@@ -245,6 +253,7 @@ const schema = z.object({
     ppkom: z.any().optional(),
     statusKondisi: z.any().optional(),
     keterangan: z.any().optional(),
+    jenisPengadaan: z.any().optional(),
 });
 const resolver = ref(zodResolver(schema));
 // const paket = reactive({
@@ -312,6 +321,7 @@ const fillDummyData = () => {
         // Status dan Item
         statusPaket: "berjalan",
         statusKondisi: "aman",
+        jenisPengadaan: "tender",
         itemPekerjaan: "Lapis Pondasi Agregat Kelas A, Lapis Resap Pengikat, AC-WC, Marka Jalan"
     });
 };
@@ -320,6 +330,7 @@ const defaultPaket = {
     paketUserId: "",
     name: "",
     description: "",
+    jenisPengadaan: "",
     tahun: null,
     kodePaket: null,
     kodeKegiatan: "",
@@ -356,6 +367,7 @@ const paket = reactive({
     paketUserId: auth.userRole.value === 'admin' ? null : auth.state.user.id,
     name: "",
     description: "",
+    jenisPengadaan: "",
     tahun: null,
     kodePaket: "",
     kodeKegiatan: null,
@@ -558,6 +570,7 @@ watch(() => props.paket, (newPaket) => {
             if (!paket.panjangKm && newPaket.panjang_ruas) paket.panjangKm = newPaket.panjang_ruas;
             if (!paket.sumberDana && newPaket.sumber_dana) paket.sumberDana = newPaket.sumber_dana;
             if (!paket.jenisPekerjaan && newPaket.jenis_pekerjaan) paket.jenisPekerjaan = newPaket.jenis_pekerjaan;
+            if (!paket.jenisPengadaan && newPaket.jenis_pengadaan) paket.jenisPengadaan = newPaket.jenis_pengadaan;
             if (!paket.programKegiatan && newPaket.program_kegiatan) paket.programKegiatan = newPaket.program_kegiatan;
             if (!paket.subProgramKegiatan && newPaket.sub_program_kegiatan) paket.subProgramKegiatan = newPaket.sub_program_kegiatan;
             if (!paket.penyediaJasa && newPaket.penyedia_jasa) paket.penyediaJasa = newPaket.penyedia_jasa;
@@ -795,12 +808,24 @@ onMounted(() => {
                         }" />
                 </div>
 
-                <div class="md:col-span-2">
+                <div>
                     <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Deskripsi
                         Singkat</label>
-                    <textarea rows="2" placeholder="Tuliskan deskripsi ringkas mengenai paket ini..."
+                    <input type="text" placeholder="Tuliskan deskripsi ringkas mengenai paket ini..."
                         v-model="paket.description"
-                        class="w-full bg-slate-50 text-sm font-medium text-blue-950 rounded-xl px-4 py-3.5 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none resize-none placeholder-slate-300"></textarea>
+                        class="w-full bg-slate-50 text-sm font-semibold text-blue-950 rounded-xl px-4 py-3.5 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none placeholder-slate-300">
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Jenis
+                        Pengadaan</label>
+                    <Select v-model="paket.jenisPengadaan" :options="jenisPengadaanOptions" optionLabel="label"
+                        optionValue="value" placeholder="Pilih Jenis Pengadaan..."
+                        filterPlaceholder="Cari Jenis Pengadaan..." :pt="{
+                            root: 'w-full !bg-slate-50 !rounded-xl !px-2 !py-1.5 !border-none !shadow-none focus:!ring-2 focus:!ring-orange-500 focus:!outline-none cursor-pointer',
+                            label: '!text-sm !font-bold !text-blue-950',
+                            item: { class: '!text-sm !font-semibold !text-blue-950' }
+                        }" />
                 </div>
             </div>
         </div>
