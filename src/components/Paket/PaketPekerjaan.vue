@@ -646,7 +646,7 @@ onMounted(() => {
                     <template #body="slotProps">
                         <div class="px-4 py-5 font-bold text-center text-blue-950  text-sm!">
                             <!-- {{ formatRupiah(slotProps.data.progress) }} -->
-                            {{ slotProps.data.totalFisikPercentage }} %
+                            {{ slotProps.data.totalFisikPercentage.toFixed(2) }} %
 
                         </div>
                     </template>
@@ -661,7 +661,7 @@ onMounted(() => {
                     <template #body="slotProps">
                         <div class="px-4 py-5 font-bold text-right text-blue-950  text-sm!">
                             <!-- {{ formatRupiah(slotProps.data.totalKeuanganPercentage) }} -->
-                            {{ slotProps.data.totalKeuanganPercentage }} %
+                            {{ slotProps.data.totalKeuanganPercentage.toFixed(2) }} %
                         </div>
                     </template>
                 </Column>
