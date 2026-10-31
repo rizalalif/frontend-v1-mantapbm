@@ -43,6 +43,7 @@ const dashboardData = ref({
     nilaiKontrak: 0,
     percentageFisik: 0,
     percentageKeuangan: 0,
+    realisasiKeuanganNominal: 0,
     rataFisik: 0,
     rataKeuangan: 0,
     paketKritis: [],
@@ -349,25 +350,28 @@ const fetchDashboardData = async () => {
 
     try {
         // Jalankan request ke berbagai endpoint secara BERSAMAAN (Paralel)
-        const [totalData, paketBerjalan, paketSelesai, nilaiKontrak, paketKritis, percentageFisik, percentageKeuangan, dokumentasi] = await Promise.all([
+        const [totalData, paketBerjalan, paketSelesai, nilaiKontrak, nilaiPagu, paketKritis, percentageFisik, percentageKeuangan, realisasiKeuanganNominal, dokumentasi] = await Promise.all([
             await api.get("/dashboard/total-paket", { params: { tahun } }),
             await api.get("/dashboard/total-paket-berjalan", { params: { tahun } }),
             await api.get("/dashboard/total-paket-selesai", { params: { tahun } }),
             await api.get("/dashboard/total-nilai-kontrak", { params: { tahun } }),
+            await api.get("/dashboard/total-nilai-pagu", { params: { tahun } }),
             await api.get("/dashboard/paket-kritis", { params: { tahun } }),
             await api.get("/dashboard/persentase-fisik", { params: { tahun } }),
             await api.get("/dashboard/persentase-keuangan", { params: { tahun } }),
+            await api.get("/dashboard/realisasi-keuangan-nominal", { params: { tahun } }),
             await api.get("/documentation"),
         ]);
-
 
         dashboardData.value.totalPaket = totalData.data.data;
         dashboardData.value.berjalan = paketBerjalan.data.data;
         dashboardData.value.selesai = paketSelesai.data.data;
         dashboardData.value.nilaiKontrak = nilaiKontrak.data.data;
+        dashboardData.value.nilaiPagu = nilaiPagu.data.data;
         dashboardData.value.percentageFisik = percentageFisik.data.data;
         dashboardData.value.percentageKeuangan = percentageKeuangan.data.data;
-        dashboardData.value.dokumentasiTerbaru = dokumentasi.data.data
+        dashboardData.value.realisasiKeuanganNominal = realisasiKeuanganNominal.data.data;
+        dashboardData.value.dokumentasiTerbaru = dokumentasi.data.data.slice(0, 4);
         dashboardData.value.paketKritis = paketKritis.data.data.map((paket, i) => {
 
             let keterangan = null;
@@ -965,7 +969,7 @@ onUnmounted(() => {
 
         </div>
     </div>
-    
+
     <!-- KONTAINER UTAMA DASHBOARD (Target Capture PDF) -->
     <div ref="dashboardPdfRef" id="printable-dashboard-content" class="min-h-screen">
 
@@ -973,7 +977,7 @@ onUnmounted(() => {
         <!-- JUDUL DI PALING ATAS DOKUMEN PDF                         -->
         <!-- (Hidden di Web, Hanya Muncul di Hasil Cetak PDF)         -->
         <!-- ======================================================== -->
-        <div id="dashboard-pdf-header" style="display: none;" 
+        <div id="dashboard-pdf-header" style="display: none;"
             class="mb-4 text-center border-b-2 border-blue-950 pb-3 bg-white/95 rounded-2xl p-4 shadow-xs">
             <h1 class="text-2xl font-black text-blue-950 uppercase tracking-tight">
                 MANTAP BM {{ route.query.tahun || new Date().getFullYear() }}
@@ -984,7 +988,7 @@ onUnmounted(() => {
         </div>
 
         <!-- ROW 1: SUMMARY CARDS (6 Kolom) -->
-        <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-5 mb-6">
+        <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-8 gap-5 mb-6">
             <!-- 1. Total Paket -->
             <CardTop bgColor="bg-[#082D58]" title="Total Paket" :value="dashboardData.totalPaket"></CardTop>
             <!-- 2. Paket Berjalan -->
@@ -1000,6 +1004,9 @@ onUnmounted(() => {
             <CardTop bgColor="bg-[#082D58]" title="Total Nilai Kontrak"
                 :value="dashboardData.nilaiKontrak ? formatWithCustomSeparators(Number(dashboardData.nilaiKontrak), ',', '.') : 0">
             </CardTop>
+            <CardTop bgColor="bg-[#082D58]" title="Total Nilai Pagu"
+                :value="dashboardData.nilaiPagu ? formatWithCustomSeparators(Number(dashboardData.nilaiPagu), ',', '.') : 0">
+            </CardTop>
             <!-- <div
                 class="bg-white rounded-3xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col justify-between">
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Total Nilai Kontrak
@@ -1008,11 +1015,18 @@ onUnmounted(() => {
                         class="text-lg">T</span></h2>
             </div> -->
             <!-- 5. Rata-rata Progres Fisik -->
-            <CardTop bgColor="bg-[#007BFF]" title="Realisasi Fisik" :value="dashboardData.percentageFisik + '%'">
+            <CardTop bgColor="bg-[#007BFF]" title="Realisasi Fisik (%)" :value="dashboardData.percentageFisik + '%'">
             </CardTop>
 
             <!-- 6. Rata-rata Progres Keuangan -->
-            <CardTop bgColor="bg-[#F7B500]" title="Realisasi Keuangan" :value="dashboardData.percentageKeuangan + '%'">
+            <CardTop bgColor="bg-[#F7B500]" title="Realisasi Keuangan (%)"
+                :value="dashboardData.percentageKeuangan + '%'">
+            </CardTop>
+
+            <!-- 7. Nominal Progres Keuangan -->
+            <CardTop bgColor="bg-[#F7B500]" title="Realisasi Keuangan (Rp)"
+                :value="formatWithCustomSeparators(Number(dashboardData.realisasiKeuanganNominal), ',', '.')"
+                v-if="dashboardData.realisasiKeuanganNominal">
             </CardTop>
 
         </div>
@@ -1061,25 +1075,25 @@ onUnmounted(() => {
 
             <!-- Peta Sebaran -->
             <div @click="$router.push({ path: '/peta-proyek' })"
-                class="md:col-span-1 bg-white rounded-[24px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 h-[300px] flex flex-col relative">
+                class="md:col-span-1 bg-white rounded-[24px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 h-[500px] flex flex-col relative">
                 <!-- Peta -->
                 <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 flex flex-col">
                     <h3 class="text-xs font-bold text-gray-700 mb-2 uppercase">Peta Sebaran Proyek</h3>
                     <!-- ID 'map' akan di-render oleh Leaflet -->
                     <div id="map"
-                        class="flex-1 rounded border border-gray-200 overflow-hidden relative min-h-[12rem] z-0">
+                        class="flex-1 rounded border border-gray-200 overflow-hidden relative min-h-[24rem] z-0">
                     </div>
                 </div>
             </div>
             <!-- Summary By Jenis Pekerjaan -->
 
             <div
-                class="md:col-span-2 z-5 bg-white rounded-[24px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 h-[300px] flex flex-col">
+                class="md:col-span-2 z-5 bg-white rounded-[24px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 h-[500px] flex flex-col">
                 <div class="overflow-x-auto ">
                     <table class="w-full text-left border-collapse">
                         <thead class="sticky top-0 z-20 bg-white">
                             <tr class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                <th class="px-4 py-4 text-center rounded-tl-xl">SUB PROGRAM KEGIATAN</th>
+                                <th class="px-4 py-4 text-center rounded-tl-xl">SUB KEGIATAN</th>
                                 <th class="px-4 py-4 text-center">Nilai Pagu</th>
                                 <th class="px-4 py-4 text-center ">Nilai Kontrak</th>
                                 <th class="px-4 py-4 text-center ">Progress Fisik</th>
@@ -1157,7 +1171,7 @@ onUnmounted(() => {
                     Semua →</a> -->
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 lg:grid-rows-1 gap-4">
                 <!-- Image 1 -->
                 <div v-for="value in dashboardData.dokumentasiTerbaru"
                     :class="`h-44 bg-[url('${BASE_URL}/images/${value.fileName}')]`"
