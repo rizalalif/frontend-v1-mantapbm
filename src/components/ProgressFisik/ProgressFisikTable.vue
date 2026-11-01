@@ -124,9 +124,13 @@
                             {{ progressListTable.totalPlanPercentage.toFixed(2) }}%
                         </td>
                         <td class="px-4 py-4 text-center font-extrabold text-lg text-blue-950">
-
                             {{ progressListTable.totalActualPercentage.toFixed(2) }}%
                         </td>
+                        <td class="px-4 py-4 text-center font-extrabold text-lg"
+                            :class="progressListTable.totalDeviationPercentage < 0 ? 'text-red-500' : 'text-emerald-500'">
+                            {{ progressListTable.totalDeviationPercentage > 0 ? '+' : '' }}{{ progressListTable.totalDeviationPercentage.toFixed(2) }}%
+                        </td>
+                        <td colspan="2" class="px-4 py-4"></td>
                     </tr>
                 </tbody>
             </table>
@@ -271,6 +275,7 @@ const progressListTable = ref({
     totalActualNominal: 0,
     totalPlanPercentage: 0,
     totalActualPercentage: 0,
+    totalDeviationPercentage: 0,
 });
 
 const modalRef = ref(null);
@@ -318,11 +323,14 @@ watch(() => filteredProgressList.value, (newList) => {
         });
     }
 
+    const totalDeviationPercentage = totalActualPercentage - totalPlanPercentage;
+
     progressListTable.value = {
         data: newList || [],
         totalActualNominal,
         totalPlanPercentage,
-        totalActualPercentage
+        totalActualPercentage,
+        totalDeviationPercentage
     };
 }, { immediate: true, deep: true });
 
