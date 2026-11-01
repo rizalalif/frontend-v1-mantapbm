@@ -8,7 +8,9 @@ import { useBreakpoints, breakpointsTailwind } from '@vueuse/core';
 import Breadcrumb from 'primevue/breadcrumb';
 import { useBreadcrumb } from '@/composables/useBreadcrumb';
 import { useDashboardExport } from '@/composables/useDashboardExport';
-
+import logoPu from '@/assets/images/compressed_logo_no_bg-3.webp';
+import logoKaltim from '@/assets/images/images.png';
+import SidebarIcon from '@primeicons/vue/sidebar';
 const { isGeneratingPdf, triggerExport } = useDashboardExport();
 const breakpoints = useBreakpoints(breakpointsTailwind)
 
@@ -72,6 +74,15 @@ const pageList = ref([
     // { id: 4, isAdmin: true, name: 'Progress Keuangan', route: 'progress-keuangan', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
     { id: 5, isAdmin: false, name: 'Peta Proyek', route: 'peta-proyek', icon: 'M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7' },
     { id: 6, isAdmin: true, name: 'Pengguna', route: 'user', icon: 'M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0-8a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm0 10c-4.42 0-8 3.58-8 8v1h16v-1c0-4.42-3.58-8-8-8zm-6.16 7c.46-2.28 2.48-4 4.91-4s4.45 1.72 4.91 4H5.84z' },
+    {
+        id: 7,
+        isAdmin: false,
+        name: 'Portal Eksternal',
+        isExternal: true,
+        url: 'https://binamarga.pu.go.id/',
+        target: '_blank',
+        icon: 'M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14'
+    },
 ])
 
 const yearOptions = ref([
@@ -82,6 +93,14 @@ const yearOptions = ref([
     { label: '2022', value: 2022 },
 ])
 const selectedYear = ref(new Date().getFullYear())
+
+// State untuk minimize/collapse sidebar
+const isSidebarMinimized = ref(localStorage.getItem('sidebar_minimized') === 'true');
+
+const toggleSidebar = () => {
+    isSidebarMinimized.value = !isSidebarMinimized.value;
+    localStorage.setItem('sidebar_minimized', String(isSidebarMinimized.value));
+};
 
 
 // State untuk buka/tutup dropdown
@@ -165,62 +184,108 @@ onUnmounted(() => {
     <div
         class="bg-[url('../assets/images/bg.webp')] bg-cover bg-center flex h-screen w-full overflow-hidden text-slate-800 custom-font">
         <!-- SIDEBAR -->
-        <aside v-if="!isMobile" class="w-[18%] bg-[#072343] m-4 rounded-3xl flex flex-col p-6 z-10 relative shrink-0">
-            <div class="flex items-center gap-3 mb-10 px-2 mt-2">
-                <div
-                    class="w-10 h-10 rounded-2xl bg-orange-500 flex items-center justify-center text-white shadow-lg shadow-orange-500/30">
-                    <img class="object-fill rounded-md" src="../assets/images/LOGO MANTAP BM REVISI 6 WAHYU.png"
-                        alt="Logo Mantap">
+        <aside v-if="!isMobile" :class="isSidebarMinimized ? 'w-20 px-3 py-6' : 'w-[18%] p-6'"
+            class="bg-[#072343] m-4 rounded-3xl flex flex-col z-10 relative shrink-0 transition-all duration-300 ease-in-out">
+            <div :class="isSidebarMinimized ? 'justify-center px-0' : 'justify-between px-2'"
+                class="flex items-center mb-10 mt-2 transition-all">
+                <!-- Area Logo & Teks Brand -->
+                <div class="flex items-center gap-3 min-w-0"
+                    :class="{ 'cursor-pointer hover:scale-105 transition-transform': isSidebarMinimized }"
+                    @click="isSidebarMinimized && toggleSidebar()"
+                    :title="isSidebarMinimized ? 'Klik untuk memperbesar sidebar' : ''">
+                    <div
+                        class="w-10 h-10 rounded-2xl bg-orange-500 flex items-center justify-center text-white shadow-lg shadow-orange-500/30 shrink-0">
+                        <img class="object-fill rounded-md" src="../assets/images/LOGO MANTAP BM REVISI 6 WAHYU.png"
+                            alt="Logo Mantap">
+                    </div>
+                    <!-- Teks Brand (Hanya tampil jika TIDAK minimize) -->
+                    <span v-if="!isSidebarMinimized" class="font-bold text-xl text-slate-200 tracking-tight truncate">
+                        MANTAP BM
+                    </span>
                 </div>
-                <span class="font-bold text-xl text-slate-200 tracking-tight">MANTAP BM</span>
+
+                <!-- Tombol Toggle Minimize di samping tulisan MANTAP BM (Hanya tampil saat expanded) -->
+                <button v-if="!isSidebarMinimized" type="button" @click.stop="toggleSidebar" title="Minimize sidebar"
+                    class="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0 ml-1">
+                    <!-- Icon Collapse (Chevron Double Left) -->
+                    <SidebarIcon />
+                </button>
             </div>
 
             <nav class="flex flex-col gap-12 font-medium">
                 <div class="flex flex-col gap-1">
+                    <!-- Judul Seksi / Garis Pembatas dengan Transisi Fade-Up -->
+                    <Transition name="fade-up" mode="out-in">
+                        <p v-if="!isSidebarMinimized" key="text"
+                            class="text-xs font-bold text-slate-400 tracking-wider mb-2 px-4 uppercase whitespace-nowrap">
+                            Menu Utama
+                        </p>
+                        <div v-else key="divider" class="w-8 h-[1px] bg-white/10 mx-auto my-2"></div>
+                    </Transition>
 
-                    <p class="text-xs font-bold text-slate-400 tracking-wider mb-2 px-4 uppercase">Menu Utama</p>
-                    <RouterLink v-for="page in filteredPageList" :key="page.id" :to="`/${page.route}`"
-                        :class="isCurrentRoute(page.route) ? 'bg-[#007Bff] text-[#072343] shadow-[0_8px_20px_rgba(23,37,84,0.2)]' : 'hover:text-slate-200 hover:text-blue-950 text-slate-400'"
-                        class="flex items-center gap-4 px-4 py-4 rounded-[20px] transition-all">
-                        <svg :class="isCurrentRoute(page.route) ? 'text-[#072343]' : ''" class="w-5 h-5" fill="none"
-                            stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" :d="page.icon">
-                            </path>
-                        </svg>
-                        {{ page.name }}
-                    </RouterLink>
+                    <template v-for="page in filteredPageList" :key="page.id">
+                        <!-- Link Eksternal -->
+                        <a v-if="page.isExternal" :href="page.url" :target="page.target || '_blank'"
+                            rel="noopener noreferrer" :title="isSidebarMinimized ? page.name : ''"
+                            :class="isSidebarMinimized ? 'justify-center px-0 py-3.5' : 'gap-4 px-4 py-4'"
+                            class="flex items-center rounded-[20px] transition-all text-slate-400 hover:text-slate-200 hover:bg-white/5">
+                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" :d="page.icon">
+                                </path>
+                            </svg>
+                            <span v-if="!isSidebarMinimized" class="truncate">{{ page.name }}</span>
+                        </a>
+
+                        <!-- RouterLink Internal -->
+                        <RouterLink v-else :to="`/${page.route}`" :title="isSidebarMinimized ? page.name : ''" :class="[
+                            isCurrentRoute(page.route) ? 'bg-[#007Bff] text-[#072343] shadow-[0_8px_20px_rgba(23,37,84,0.2)]' : 'hover:text-slate-200 hover:text-blue-950 text-slate-400',
+                            isSidebarMinimized ? 'justify-center px-0 py-3.5' : 'gap-4 px-4 py-4'
+                        ]" class="flex items-center rounded-[20px] transition-all">
+                            <svg :class="isCurrentRoute(page.route) ? 'text-[#072343]' : ''" class="w-5 h-5 shrink-0"
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" :d="page.icon">
+                                </path>
+                            </svg>
+                            <span v-if="!isSidebarMinimized" class="truncate">{{ page.name }}</span>
+                        </RouterLink>
+                    </template>
                 </div>
                 <div v-show="$route.path === '/dashboard'" class="flex flex-col gap-3">
-                    <div>
-                        <p class="text-xs font-bold text-slate-400 tracking-wider mb-2 px-4 uppercase">Filter</p>
-                    </div>
-                    <Select v-model="selectedYear" :options="yearOptions" optionLabel="label" optionValue="value"
-                        placeholder="Pilih Tahun" :pt="{
-                            root: 'w-full! bg-white/10! rounded-xl! px-2! py-1.5! border-none! shadow-none! focus:ring-2! focus:ring-orange-500! focus:outline-none! cursor-pointer!',
-                            label: 'text-sm! font-bold! text-slate-200!',
-                            item: { class: 'text-sm! font-semibold! text-amve!' },
-                            // listContainer: {
-                            //     class: 'bg-slate-200!'
-                            // },
+                    <!-- Filter Select (Hanya tampil saat expanded) -->
+                    <template v-if="!isSidebarMinimized">
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 tracking-wider mb-2 px-4 uppercase">Filter</p>
+                        </div>
+                        <Select v-model="selectedYear" :options="yearOptions" optionLabel="label" optionValue="value"
+                            placeholder="Pilih Tahun" :pt="{
+                                root: 'w-full! bg-white/10! rounded-xl! px-2! py-1.5! border-none! shadow-none! focus:ring-2! focus:ring-orange-500! focus:outline-none! cursor-pointer!',
+                                label: 'text-sm! font-bold! text-slate-200!',
+                                item: { class: 'text-sm! font-semibold! text-amve!' },
+                            }" @change="setTahun" />
+                    </template>
 
-                        }" @change="setTahun" />
-
-                    <!-- Tombol Action Cetak PDF Dashboard -->
-                    <button type="button" 
-                        @click="triggerExport" 
-                        :disabled="isGeneratingPdf"
-                        class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white/10! hover:bg-blue-500 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
+                    <!-- Tombol Action Cetak PDF Dashboard (Tampil di kedua kondisi) -->
+                    <button type="button" @click="triggerExport" :disabled="isGeneratingPdf"
+                        :title="isSidebarMinimized ? (isGeneratingPdf ? 'Menyiapkan PDF...' : 'Export PDF') : ''"
+                        :class="isSidebarMinimized ? 'px-0 py-2.5 justify-center' : 'px-4 py-2.5 justify-center gap-2'"
+                        class="w-full flex items-center bg-white/10! hover:bg-blue-500 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
                         <!-- Spinner saat proses render -->
-                        <svg v-if="isGeneratingPdf" class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        <svg v-if="isGeneratingPdf" class="animate-spin h-4 w-4 text-white shrink-0" fill="none"
+                            viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                            </circle>
+                            <path class="opacity-75" fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                            </path>
                         </svg>
                         <!-- Icon Download PDF -->
-                        <svg v-else class="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg v-else class="w-4 h-4 text-orange-400 shrink-0" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
-                        <span>{{ isGeneratingPdf ? 'Menyiapkan PDF...' : 'Export PDF' }}</span>
+                        <span v-if="!isSidebarMinimized">{{ isGeneratingPdf ? 'Menyiapkan PDF...' : 'Export PDF'
+                            }}</span>
                     </button>
                     <!-- <Select :showClear="auth.userRole.value === 'admin'" optionLabel="name" optionValue="id"
                         placeholder="Pilih PIC..." filter filterPlaceholder="Cari nama PIC..." :pt="{
@@ -230,12 +295,27 @@ onUnmounted(() => {
                         }" /> -->
                 </div>
             </nav>
+
+            <!-- 2 LOGO DI PALING BAWAH & TENGAH SIDEBAR -->
+            <!-- <div :class="isSidebarMinimized ? 'flex-col gap-2' : 'flex-row gap-4'"
+                class="mt-auto pt-6 border-t border-white/10 flex items-center justify-center transition-all">
+                <img :src="logoPu" alt="Logo PU" :class="isSidebarMinimized ? 'h-7' : 'h-10'"
+                    class="w-auto object-contain hover:scale-105 transition-all" />
+                <img :src="logoKaltim" alt="Logo Pemprov Kaltim" :class="isSidebarMinimized ? 'h-7' : 'h-10'"
+                    class="w-auto object-contain hover:scale-105 transition-all" />
+            </div> -->
         </aside>
 
         <div class="flex-1 flex flex-col min-w-0">
             <!-- TOPBAR -->
-            <header :class="isMobile ? 'w-[96dvw] left-[48%] -translate-x-1/2' : 'w-[78dvw] left-[20%]  translate-x-0'"
-                class="fixed h-24 top-0    bg-white mt-4 mx-4 rounded-3xl flex items-center justify-between px-10 z-10 shrink-0 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
+            <header :class="[
+                isMobile
+                    ? 'w-[96dvw] left-[48%] -translate-x-1/2'
+                    : isSidebarMinimized
+                        ? 'w-[calc(100vw-7.5rem)] left-[6.5rem] translate-x-0'
+                        : 'w-[78dvw] left-[20%] translate-x-0'
+            ]"
+                class="fixed h-24 top-0 bg-white mt-4 mx-4 rounded-3xl flex items-center justify-between px-10 z-10 shrink-0 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 transition-all duration-300 ease-in-out">
                 <div class="flex items-center gap-2">
                     <Breadcrumb :model="breadcrumbItems" class="!bg-transparent !border-none !p-0 flex items-center">
                         <template #item="{ item, props }">
@@ -278,7 +358,7 @@ onUnmounted(() => {
                             class="w-10 h-10 rounded-full bg-blue-900 text-white flex items-center justify-center font-bold text-sm">
                             {{ userInitials }}</div>
                         <span v-if="auth.isLoggedIn" class="text-sm font-bold text-blue-950">{{ auth.state.user.fullName
-                        }}</span>
+                            }}</span>
                     </div>
                     <div v-if="isMobile"
                         class="flex items-center gap-3 lg:bg-slate-50 p-1.5 pr-4 rounded-full lg:border lg:border-slate-100 cursor-pointer">
@@ -287,7 +367,7 @@ onUnmounted(() => {
                             {{ userInitials }}</div>
                         <span v-if="auth.isLoggedIn && !isMobile" class="text-sm font-bold text-blue-950">{{
                             auth.state.user.fullName
-                        }}</span>
+                            }}</span>
                     </div>
                     <div v-if="isDropdownOpen"
                         class="absolute right-10 top-17 mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
@@ -301,21 +381,32 @@ onUnmounted(() => {
 
                             <div class="px-4 py-2 border-b border-slate-100">
                                 <p class="text-sm font-bold text-slate-800">{{ auth.state.user?.fullName || 'User Admin'
-                                    }}
+                                }}
                                 </p>
                                 <p class="text-xs text-slate-500 capitalize">{{ auth.userRole }}</p>
                             </div>
-                            <RouterLink v-for="page in filteredPageList" :key="page.id" :to="`/${page.route}`"
-                                :class="isCurrentRoute(page.route) ? 'bg-blue-950 text-white' : 'hover:bg-slate-50 hover:text-blue-950 text-slate-400'"
-                                class="flex items-center gap-4 px-4 py-4 rounded-xl transition-all">
-                                <svg :class="isCurrentRoute(page.route) ? 'text-orange-400' : ''" class="w-5 h-5"
-                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                        :d="page.icon">
-                                    </path>
-                                </svg>
-                                {{ page.name }}
-                            </RouterLink>
+                            <template v-for="page in filteredPageList" :key="page.id">
+                                <a v-if="page.isExternal" :href="page.url" :target="page.target || '_blank'"
+                                    rel="noopener noreferrer"
+                                    class="flex items-center gap-4 px-4 py-4 rounded-xl transition-all hover:bg-slate-50 hover:text-blue-950 text-slate-400">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            :d="page.icon"></path>
+                                    </svg>
+                                    <span>{{ page.name }}</span>
+                                </a>
+                                <RouterLink v-else :to="`/${page.route}`"
+                                    :class="isCurrentRoute(page.route) ? 'bg-blue-950 text-white' : 'hover:bg-slate-50 hover:text-blue-950 text-slate-400'"
+                                    class="flex items-center gap-4 px-4 py-4 rounded-xl transition-all">
+                                    <svg :class="isCurrentRoute(page.route) ? 'text-orange-400' : ''" class="w-5 h-5"
+                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            :d="page.icon">
+                                        </path>
+                                    </svg>
+                                    <span>{{ page.name }}</span>
+                                </RouterLink>
+                            </template>
                         </div>
 
                         <!-- Menu items -->
@@ -372,5 +463,21 @@ onUnmounted(() => {
 .main-scroll::-webkit-scrollbar-thumb {
     background: #cbd5e1;
     border-radius: 10px;
+}
+
+/* Transisi Fade Up untuk Menu Utama & Garis Pembatas */
+.fade-up-enter-active,
+.fade-up-leave-active {
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fade-up-enter-from {
+    opacity: 0;
+    transform: translateY(6px);
+}
+
+.fade-up-leave-to {
+    opacity: 0;
+    transform: translateY(-6px);
 }
 </style>
