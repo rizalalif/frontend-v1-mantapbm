@@ -1,13 +1,15 @@
 <script setup>
 import router from '@/router';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, nextTick } from 'vue';
 import api from '@/services/api';
 import { useAuth } from '@/lib/Auth';
 import DeleteModal from '../utils/DeleteModal.vue';
-import { FileExcel } from '@primeicons/vue';
+import { FileExcel, FilePdf } from '@primeicons/vue';
 import * as XLSX from 'xlsx';
 import { generateExcel } from '@/lib/Helper.js';
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core';
+import html2canvas from 'html2canvas-pro';
+import { jsPDF } from 'jspdf';
 const pakets = ref([]);
 const loading = ref(true);
 const error = ref(false);
@@ -45,6 +47,11 @@ const selectedYear = ref(null);
 const searchQuery = ref('');
 const showOverlay = ref(false);
 const searchContainer = ref(null);
+
+// State untuk Export PDF
+const tablePrintContainerRef = ref(null);
+const isGeneratingPdf = ref(false);
+const isPdfMode = ref(false);
 
 const progressFisik = ref([
     {
@@ -226,41 +233,75 @@ const handleClickOutside = (event) => {
 };
 const handleExportExcel = () => {
     // 1. Siapkan datanya (Tambahkan nomor urut atau pastikan tipe data angka)
-    const dataToExport = filteredPaket.value.map((paket, index) => ({
-        no: index + 1,
-        name: paket.name || '-',
-        noKontrak: paket.noKontrak || '-',
-        penyediaJasa: paket.namaPenyediaJasa || '-',
-        nilaiPagu: Number(paket.nilaiPagu) || 0,
-        nilaiKontrak: Number(paket.nilaiKontrak) || 0,
-        tahun: paket.tahun || '2026',
-        kodeRup: paket.kodeRup || '-',
-        kodeKegiatan: paket.kodeKegiatan || '-',
-        statusPaket: paket.statusPaket || '-',
-        statusKondisi: paket.statusKondisi || '-',
-        longitude: paket.longitude || '-',
-        latitude: paket.latitude || '-',
-        tahun: paket.tahun,
-    }));
+    const dataToExport = filteredPaket.value.map((paket, index) => {
+        const plan = getPaketPlanPercentage(paket);
+        const actual = getPaketActualPercentage(paket);
+        const deviation = getPaketDeviationPercentage(paket);
+
+        return {
+            no: index + 1,
+            name: paket.name || '-',
+            jenisPekerjaan: paket.jenisPekerjaan || '-',
+            noKontrak: paket.noKontrak || '-',
+            penyediaJasa: paket.penyediaJasa || paket.namaPenyediaJasa || '-',
+            nilaiPagu: Number(paket.nilaiPagu) || 0,
+            nilaiKontrak: Number(paket.nilaiKontrak) || 0,
+            rencanaFisik: `${plan.toFixed(2)}%`,
+            aktualFisik: `${actual.toFixed(2)}%`,
+            deviasiFisik: `${deviation > 0 ? '+' : ''}${deviation.toFixed(2)}%`,
+            aktualKeuangan: paket.totalKeuanganPercentage != null
+                ? `${Number(paket.totalKeuanganPercentage).toFixed(2)}%`
+                : '0%',
+            tanggalMulai: formatDateShort(paket.tanggalMulai),
+            tanggalAkhir: formatDateShort(paket.tanggalAkhir),
+            statusKondisi: capitalizeFirstLetter(paket.statusKondisi || 'Aman'),
+            statusMonitoring: getStatusProgress(paket) || '-',
+            statusPaket: paket.statusPaket ? capitalizeFirstLetter(paket.statusPaket) : '-',
+            panjangKm: Number(paket.panjangKm) || 0,
+            sumberDana: paket.sumberDana || '-',
+            ppkom: paket.ppkom || '-',
+            konsultanSupervisi: paket.konsultanSupervisi || '-',
+            programKegiatan: paket.programKegiatan || '-',
+            subProgramKegiatan: paket.subProgramKegiatan || '-',
+            kodeRup: paket.kodeRup || paket.kodePaket || '-',
+            kodeKegiatan: paket.kodeKegiatan || '-',
+            tahun: paket.tahun || '2026',
+            lokasi: [paket.ruasLokasi, paket.kecamatan, paket.city].filter(Boolean).join(', ') || '-',
+            longitude: paket.longitude || '-',
+            latitude: paket.latitude || '-',
+        };
+    });
 
     // 2. Definisikan struktur kolom (Header Excel, Key di objek dataToExport, dan Lebar Excel)
     const columnsConfig = [
         { header: 'No', key: 'no', width: 5 },
-        { header: 'Nama Paket Pekerjaan', key: 'name', width: 50 },
+        { header: 'Nama Paket Pekerjaan', key: 'name', width: 45 },
+        { header: 'Jenis Pekerjaan', key: 'jenisPekerjaan', width: 30 },
         { header: 'Nomor Kontrak', key: 'noKontrak', width: 25 },
         { header: 'Penyedia Jasa', key: 'penyediaJasa', width: 35 },
         { header: 'Nilai Pagu (Rp)', key: 'nilaiPagu', width: 20 },
         { header: 'Nilai Kontrak (Rp)', key: 'nilaiKontrak', width: 20 },
-        { header: 'Tahun Anggaran', key: 'tahun', width: 15 },
+        { header: 'Rencana Fisik (%)', key: 'rencanaFisik', width: 18 },
+        { header: 'Aktual Fisik (%)', key: 'aktualFisik', width: 18 },
+        { header: 'Deviasi Fisik (%)', key: 'deviasiFisik', width: 18 },
+        { header: 'Aktual Keuangan (%)', key: 'aktualKeuangan', width: 20 },
+        { header: 'Tanggal Mulai', key: 'tanggalMulai', width: 15 },
+        { header: 'Tanggal Selesai', key: 'tanggalAkhir', width: 15 },
+        { header: 'Status Kondisi', key: 'statusKondisi', width: 15 },
+        { header: 'Status Monitoring', key: 'statusMonitoring', width: 18 },
+        { header: 'Status Paket', key: 'statusPaket', width: 15 },
+        { header: 'Panjang Ruas (Km)', key: 'panjangKm', width: 18 },
+        { header: 'Sumber Dana', key: 'sumberDana', width: 15 },
+        { header: 'PPKOM', key: 'ppkom', width: 25 },
+        { header: 'Konsultan Supervisi', key: 'konsultanSupervisi', width: 25 },
+        { header: 'Program Kegiatan', key: 'programKegiatan', width: 30 },
+        { header: 'Sub Program Kegiatan', key: 'subProgramKegiatan', width: 30 },
         { header: 'Kode RUP', key: 'kodeRup', width: 20 },
         { header: 'Kode Kegiatan', key: 'kodeKegiatan', width: 20 },
-        { header: 'Status Paket', key: 'statusPaket', width: 20 },
-        { header: 'Status Kondisi', key: 'statusKondisi', width: 20 },
+        { header: 'Tahun Anggaran', key: 'tahun', width: 15 },
+        { header: 'Lokasi Ruas', key: 'lokasi', width: 30 },
         { header: 'Longitude', key: 'longitude', width: 20 },
         { header: 'Latitude', key: 'latitude', width: 20 },
-        { header: 'Tahun', key: 'tahun', width: 20 },
-
-
     ];
 
     // 3. Panggil fungsi Helper
@@ -273,6 +314,200 @@ const handleExportExcel = () => {
         );
     } catch (error) {
         alert('Terjadi kesalahan saat mengunduh Excel.', error);
+    }
+};
+
+// ============================================================
+// LOGIKA EXPORT PDF MULTI-HALAMAN DENGAN SMART ROW-BOUNDARY SLICING
+// ============================================================
+const handleExportPdf = async () => {
+    if (isGeneratingPdf.value || !tablePrintContainerRef.value) return;
+
+    if (!filteredPaket.value || filteredPaket.value.length === 0) {
+        alert('Tidak ada data paket untuk diekspor ke PDF.');
+        return;
+    }
+
+    try {
+        isGeneratingPdf.value = true;
+        isPdfMode.value = true;
+
+        // 1. SIMPAN STATUS ACCORDION PENGGUNA SEBELUMNYA
+        const previousExpanded = Array.isArray(expandedRowGroups.value)
+            ? [...expandedRowGroups.value]
+            : [];
+
+        console.log("previousExpanded")
+        console.log(previousExpanded)
+
+        // 2. BUKA SELURUH GROUPING ACCORDION
+        const allGroups = [...new Set(filteredPaket.value.map(p => p.jenisPekerjaan))];
+        expandedRowGroups.value = allGroups;
+
+        // 3. TUNGGU RENDER DOM SELESAI LENGKAP
+        await nextTick();
+        await new Promise(resolve => setTimeout(resolve, 350));
+
+        const targetEl = tablePrintContainerRef.value;
+        if (!targetEl) throw new Error('Elemen tabel tidak ditemukan');
+
+        // 4. CAPTURE ELEMEN MENJADI CANVAS RESOLUSI TINGGI
+        const canvas = await html2canvas(targetEl, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#ffffff',
+            windowWidth: 1440, // Standar desktop agar seluruh 11 kolom proporsional
+            onclone: (clonedDoc, clonedElement) => {
+                // Tampilkan kop judul PDF di DOM tiruan
+                const pdfHeader = clonedElement.querySelector('#pdf-table-header');
+                if (pdfHeader) {
+                    pdfHeader.style.display = 'block';
+                }
+
+                // Sembunyikan kolom "Aksi" pada header thead dan baris data (bukan baris group header)
+                // PENTING: Jangan menyembunyikan td pada baris group header agar baris accordion grouping tetap utuh tampil di PDF!
+                const aksiHeaders = clonedElement.querySelectorAll('thead th:last-child');
+                aksiHeaders.forEach(th => th.style.display = 'none');
+                const dataRows = clonedElement.querySelectorAll('tbody tr:not(.p-datatable-row-group-header)');
+                dataRows.forEach(row => {
+                    const lastTd = row.querySelector('td:last-child');
+                    if (lastTd) lastTd.style.display = 'none';
+                });
+
+                // Pastikan baris accordion grouping (groupheader) tetap terlihat jelas dengan background kontras
+                const groupHeaders = clonedElement.querySelectorAll('.p-datatable-row-group-header, [data-pc-section="rowgroupheader"]');
+                groupHeaders.forEach(gh => {
+                    gh.style.backgroundColor = '#f1f5f9';
+                    gh.style.display = 'table-row';
+                });
+
+                // Hilangkan bayangan & atur background putih bersih
+                clonedElement.style.boxShadow = 'none';
+                clonedElement.style.border = 'none';
+                clonedElement.style.padding = '8px 12px';
+            }
+        });
+
+        // 5. UKUR KOORDINAT BATAS BAWAH SETIAP BARIS (<tr>) UNTUK ANTI-POTONG
+        const rows = targetEl.querySelectorAll('tr');
+        const tableRect = targetEl.getBoundingClientRect();
+        const scaleY = canvas.height / targetEl.offsetHeight;
+
+        const rowBottoms = [];
+        rows.forEach(tr => {
+            const rect = tr.getBoundingClientRect();
+            const bottomInCanvas = (rect.bottom - tableRect.top) * scaleY;
+            if (bottomInCanvas > 0) {
+                rowBottoms.push(bottomInCanvas);
+            }
+        });
+        rowBottoms.sort((a, b) => a - b);
+
+        // 6. INISIALISASI DOKUMEN PDF (A4 LANDSCAPE)
+        const pdf = new jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: 'a4'
+        });
+
+        const pageWidth = 297;  // mm
+        const pageHeight = 210; // mm
+        const margin = 10;      // mm
+        const printableWidth = pageWidth - (margin * 2);   // 277 mm
+        const printableHeight = pageHeight - (margin * 2); // 190 mm
+
+        // Konversi rasio: 1 mm di PDF = berapa px di canvas
+        const mmToPx = canvas.width / printableWidth;
+        const maxPageCanvasHeight = printableHeight * mmToPx;
+
+        // 7. SLICING PER HALAMAN DENGAN MENJAGA INTEGRITAS BARIS (ZERO CUT)
+        let currentY = 0;
+        let pageIndex = 0;
+
+        while (currentY < canvas.height - 2) {
+            if (pageIndex > 0) {
+                pdf.addPage();
+            }
+
+            const targetMaxY = currentY + maxPageCanvasHeight;
+            let sliceEndY = canvas.height;
+
+            // Jika masih melebihi satu halaman, cari baris terakhir yang masuk penuh
+            if (targetMaxY < canvas.height) {
+                let bestBottom = currentY;
+                for (let i = 0; i < rowBottoms.length; i++) {
+                    if (rowBottoms[i] > currentY && rowBottoms[i] <= targetMaxY) {
+                        bestBottom = rowBottoms[i];
+                    }
+                }
+
+                if (bestBottom > currentY) {
+                    sliceEndY = Math.round(bestBottom);
+                } else {
+                    sliceEndY = Math.round(targetMaxY);
+                }
+            }
+
+            const sliceHeight = sliceEndY - currentY;
+
+            // Buat canvas sementara per halaman
+            const pageCanvas = document.createElement('canvas');
+            pageCanvas.width = canvas.width;
+            pageCanvas.height = sliceHeight;
+            const pageCtx = pageCanvas.getContext('2d');
+
+            pageCtx.drawImage(
+                canvas,
+                0, currentY, canvas.width, sliceHeight,
+                0, 0, canvas.width, sliceHeight
+            );
+
+            const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
+            const renderedHeightMm = sliceHeight / mmToPx;
+
+            pdf.addImage(
+                pageImgData,
+                'JPEG',
+                margin,
+                margin,
+                printableWidth,
+                renderedHeightMm,
+                undefined,
+                'FAST'
+            );
+
+            currentY = sliceEndY;
+            pageIndex++;
+        }
+
+        // 8. TAMBAHKAN NOMOR HALAMAN DI FOOTER
+        const totalPages = pdf.internal.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+            pdf.setPage(i);
+            pdf.setFontSize(8);
+            pdf.setTextColor(140, 140, 140);
+            pdf.text(
+                `Halaman ${i} dari ${totalPages}  •  Sistem Monitoring MANTAP BM  •  Dicetak pada: ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`,
+                pageWidth / 2,
+                pageHeight - 5,
+                { align: 'center' }
+            );
+        }
+
+        // 9. SIMPAN FILE PDF
+        const tahunStr = selectedYear.value ? `_${selectedYear.value}` : '';
+        pdf.save(`Daftar_Paket_Pekerjaan${tahunStr}.pdf`);
+
+        // 10. KEMBALIKAN KONDISI ACCORDION PENGGUNA KE SEMULA
+        expandedRowGroups.value = previousExpanded;
+
+    } catch (err) {
+        console.error('Gagal mengekspor PDF:', err);
+        alert('Terjadi kesalahan saat memproses PDF. Silakan coba lagi.');
+    } finally {
+        isPdfMode.value = false;
+        isGeneratingPdf.value = false;
     }
 };
 
@@ -311,7 +546,7 @@ const toDetail = (event) => {
 }
 
 const formatRupiah = (val) => {
-    if (val === null || val === undefined || isNaN(val)) return 'Rp 0';
+    if (val === null || val === undefined || isNaN(val)) return '0';
 
     return new Intl.NumberFormat('id-ID', {
         // style: 'currency',
@@ -320,6 +555,23 @@ const formatRupiah = (val) => {
         compactDisplay: isTablet.value ? 'short' : 'long',
         maximumFractionDigits: 0
     }).format(val);
+};
+
+// Format tanggal menjadi D/M/YY (Contoh: "2026-11-01" -> "1/11/26")
+const formatDateShort = (val) => {
+    if (!val) return '-';
+    const str = String(val).split('T')[0].trim();
+    const parts = str.split('-');
+    if (parts.length === 3) {
+        const [year, month, day] = parts;
+        const d = parseInt(day, 10);
+        const m = parseInt(month, 10);
+        const y = String(year).slice(-2);
+        if (!isNaN(d) && !isNaN(m)) {
+            return `${d}/${m}/${y}`;
+        }
+    }
+    return str;
 };
 
 const deletePaket = async (id) => {
@@ -366,6 +618,101 @@ const hitungTotalKeuanganPercentage = (namaGrup) => {
     const totalKeuanganPercentage = ((totalProgress / totalKontrak) * 100).toFixed(2)
     return isNaN(totalKeuanganPercentage) || !isFinite(totalKeuanganPercentage) ? 0 : totalKeuanganPercentage
 }
+
+// ==========================================
+// HELPER PERHITUNGAN PROGRESS FISIK PER PAKET & GRUP
+// ==========================================
+const getPaketPlanPercentage = (paket) => {
+    if (!paket) return 0;
+    if (paket.totalPlanPercentage !== undefined && paket.totalPlanPercentage !== null) {
+        return Number(paket.totalPlanPercentage) || 0;
+    }
+    if (Array.isArray(paket.progressFisiks) && paket.progressFisiks.length > 0) {
+        return paket.progressFisiks.reduce((sum, item) => sum + (Number(item?.planPercentage) || 0), 0);
+    }
+    if (paket.planPercentage !== undefined && paket.planPercentage !== null) {
+        return Number(paket.planPercentage) || 0;
+    }
+    return 0;
+};
+
+const getPaketActualPercentage = (paket) => {
+    if (!paket) return 0;
+    if (paket.totalActualPercentage !== undefined && paket.totalActualPercentage !== null) {
+        return Number(paket.totalActualPercentage) || 0;
+    }
+    if (Array.isArray(paket.progressFisiks) && paket.progressFisiks.length > 0) {
+        return paket.progressFisiks.reduce((sum, item) => sum + (Number(item?.actualPercentage) || 0), 0);
+    }
+    if (paket.totalFisikPercentage !== undefined && paket.totalFisikPercentage !== null) {
+        return Number(paket.totalFisikPercentage) || 0;
+    }
+    return 0;
+};
+
+const getPaketDeviationPercentage = (paket) => {
+    if (!paket) return 0;
+    if (paket.totalDeviationPercentage !== undefined && paket.totalDeviationPercentage !== null) {
+        return Number(paket.totalDeviationPercentage) || 0;
+    }
+    return getPaketActualPercentage(paket) - getPaketPlanPercentage(paket);
+};
+
+const hitungTotalPlanFisikGrup = (namaGrup) => {
+    const groupItems = filteredPaket.value.filter(p => p.jenisPekerjaan === namaGrup);
+    if (!groupItems.length) return '0.00';
+    const sumPlan = groupItems.reduce((acc, p) => acc + getPaketPlanPercentage(p), 0);
+    return (sumPlan / groupItems.length).toFixed(2);
+};
+
+const hitungTotalActualFisikGrup = (namaGrup) => {
+    const groupItems = filteredPaket.value.filter(p => p.jenisPekerjaan === namaGrup);
+    if (!groupItems.length) return '0.00';
+    const sumActual = groupItems.reduce((acc, p) => acc + getPaketActualPercentage(p), 0);
+    return (sumActual / groupItems.length).toFixed(2);
+};
+
+const hitungTotalDeviasiGrup = (namaGrup) => {
+    const actual = Number(hitungTotalActualFisikGrup(namaGrup)) || 0;
+    const plan = Number(hitungTotalPlanFisikGrup(namaGrup)) || 0;
+    return (actual - plan).toFixed(2);
+};
+
+const getStatusProgress = (paket) => {
+    if (!paket) return null;
+
+    if (paket.statusPaket === "selesai") {
+        return 'Updated';
+    }
+
+    if (!paket.nextInputFisik) {
+        return 'Not Updated';
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const targetDate = new Date(paket.nextInputFisik);
+    targetDate.setHours(0, 0, 0, 0);
+
+    if (today < targetDate) {
+        return 'Updated';
+    } else {
+        return 'Not Updated';
+    }
+};
+
+const getStatusProgressBadgeClass = (status) => {
+    if (!status) return 'px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-bold';
+    const s = String(status).toLowerCase();
+    if (s.includes('not updated')) {
+        return 'px-1.5 py-0.5 bg-red-100 text-red-700 rounded text-[10px] font-bold';
+    }
+    if (s.includes('updated')) {
+        return 'px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-bold';
+    }
+    return 'px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[10px] font-bold';
+};
 
 const getStatusBadgeClass = (status) => {
     if (!status) return 'px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-md text-[10px] font-bold';
@@ -471,13 +818,25 @@ onMounted(() => {
 
                 <!-- Add Button -->
                 <div class="flex justify-center md:flex-col-reverse lg:flex-row gap-3">
+                    <!-- Tombol Export PDF (Merah, di sebelah kiri Export Excel) -->
+                    <button type="button" @click="handleExportPdf" :disabled="isGeneratingPdf"
+                        class="bg-red-600 hover:bg-red-700 active:scale-95 text-white px-4 py-2 rounded-full shadow-sm text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
+                        <!-- Spinner saat render -->
+                        <svg v-if="isGeneratingPdf" class="animate-spin h-4 w-4 text-white" fill="none"
+                            viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                            </circle>
+                            <path class="opacity-75" fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                            </path>
+                        </svg>
+                        <FilePdf v-else :size="40" />
+                        <span>{{ isGeneratingPdf ? 'Menyiapkan PDF...' : 'Export PDF' }}</span>
+                    </button>
+
+                    <!-- Tombol Export Excel -->
                     <button @click="handleExportExcel"
                         class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-full shadow-sm text-sm font-semibold flex items-center gap-2 transition-all">
-                        <!-- <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                            </path>
-                        </svg> -->
                         <FileExcel :size="40" />
                         Export Excel
                     </button>
@@ -500,65 +859,104 @@ onMounted(() => {
             <Skeleton width="100%" height="6rem" borderRadius="24px" class="bg-slate-100!" />
             <Skeleton width="100%" height="6rem" borderRadius="24px" class="bg-slate-100!" /> -->
             <DataTable :value="[1, 2, 3]" :pt="{
-                /* WAJIB: Tambahkan 'table-fixed' agar lebar persentase tidak bergeser */
-                table: { class: 'min-w-full text-sm text-left text-slate-600 border-collapse table-fixed' },
-                thead: { class: 'text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200' },
+                table: { class: 'w-full text-xs text-left text-slate-600 border-collapse table-fixed' },
+                thead: { class: 'text-[10px] text-slate-400 font-bold uppercase tracking-wider bg-slate-50 border-b border-slate-200' },
                 tbody: { class: 'divide-y divide-slate-100' },
-                rowGroupHeaderCell: { colspan: 8, class: 'bg-slate-50! flex!' },
-
-                // rowGroupHeader: { class: 'cursor-pointer! hover:bg-black! transition-colors!' },
-                // /* WAJIB: !p-0 agar grid kita bisa menempel dari ujung ke ujung */
-                // rowGroupHeaderCell: { class: '!p-0 !bg-blue-50/70 border-b border-blue-200' },
+                rowGroupHeaderCell: { colspan: 12, class: 'bg-slate-50! flex!' },
                 rowGroupToggler: { class: 'inline-flex! items-center justify-start! mr-3 text-blue-600 hover:text-blue-800' },
-                // rowGroupTogglerIcon: { class: 'w-4 h-4' }
                 bodyRow: { class: 'hover:bg-slate-50/50! transition-colors! border-b! border-slate-50/70! group!' }
-
             }">
-                <Column field="name" header="Nama Paket " style="width: 12%;" :pt="{
-                    columnHeaderContent: { class: 'p-0!' },
-                    columnTitle: { class: 'text-xs! text-center! text-slate-400 font-bold! px-4 py-4 uppercase! tracking-wider! rounded-tl-xl py-3! px-4!' }
+                <Column field="name" header="Nama Paket" style="width: 15%;" :pt="{
+                    columnHeaderContent: { class: 'p-2! justify-start!' },
+                    columnTitle: { class: 'text-[10px] text-slate-400 font-bold uppercase tracking-wider py-2! pl-3!' }
                 }">
                     <template #body>
                         <Skeleton />
                     </template>
                 </Column>
-                <Column field="nilaiPagu" header="Nilai Pagu" style="width: 10%;" :pt="{
-                    columnTitle: { class: 'text-xs! text-center! text-slate-400 font-bold! px-4 py-4 uppercase! tracking-wider! rounded-tl-xl py-3! px-4!' }
+                <Column field="nilaiPagu" header="Nilai Pagu" style="width: 15%;" :pt="{
+                    columnHeaderContent: { class: 'p-2! justify-end!' },
+                    columnTitle: { class: 'text-[10px] text-slate-400 font-bold uppercase tracking-wider py-2! pr-2!' }
                 }">
                     <template #body>
                         <Skeleton />
                     </template>
                 </Column>
-                <Column field="nilaiKontrak" header="Nilai Kontrak" style="width: 10%;" :pt="{
-                    columnTitle: { class: 'text-xs! text-center! text-slate-400 font-bold! px-4 py-4 uppercase! tracking-wider! rounded-tl-xl py-3! px-4!' }
+                <Column field="nilaiKontrak" header="Nilai Kontrak" style="width: 15%;" :pt="{
+                    columnHeaderContent: { class: 'p-2! justify-end!' },
+                    columnTitle: { class: 'text-[10px] text-slate-400 font-bold uppercase tracking-wider py-2! pr-2!' }
                 }">
                     <template #body>
                         <Skeleton />
                     </template>
                 </Column>
-                <Column field="progress" header="Progres Fisik" style="width: 10%;" :pt="{
-                    columnTitle: { class: 'text-xs! text-center! text-slate-400 font-bold! px-4 py-4 uppercase! tracking-wider! rounded-tl-xl py-3! px-4!' }
+                <Column field="progress" header="Fisik Ren." style="width: 6%;" :pt="{
+                    columnHeaderContent: { class: 'p-2! justify-center!' },
+                    columnTitle: { class: 'text-[10px] text-slate-400 font-bold uppercase tracking-wider py-2! text-center!' }
                 }">
                     <template #body>
                         <Skeleton />
                     </template>
                 </Column>
-                <Column field="progress" header="Progress Keuangan" style="width: 10%;" :pt="{
-                    columnTitle: { class: 'text-xs! text-center! text-slate-400 font-bold! px-4 py-4 uppercase! tracking-wider! rounded-tl-xl py-3! px-4!' }
+                <Column field="progress" header="Fisik Akt." style="width: 6%;" :pt="{
+                    columnHeaderContent: { class: 'p-2! justify-center!' },
+                    columnTitle: { class: 'text-[10px] text-slate-400 font-bold uppercase tracking-wider py-2! text-center!' }
                 }">
                     <template #body>
                         <Skeleton />
                     </template>
                 </Column>
-                <Column field="statusKondisi" header="Kondisi" style="width: 5%;" :pt="{
-                    columnTitle: { class: 'text-xs! text-center! text-slate-400 font-bold! px-4 py-4 uppercase! tracking-wider! rounded-tl-xl py-3! px-4!' }
+                <Column field="progress" header="Deviasi" style="width: 6%;" :pt="{
+                    columnHeaderContent: { class: 'p-2! justify-center!' },
+                    columnTitle: { class: 'text-[10px] text-slate-400 font-bold uppercase tracking-wider py-2! text-center!' }
                 }">
                     <template #body>
                         <Skeleton />
                     </template>
                 </Column>
-                <Column field="statusPaket" header="Status" style="width: 5%;" :pt="{
-                    columnTitle: { class: 'text-xs! text-center! text-slate-400 font-bold! px-4 py-4 uppercase! tracking-wider! rounded-tl-xl py-3! px-4!' }
+                <Column field="progress" header="Keuangan" style="width: 6%;" :pt="{
+                    columnHeaderContent: { class: 'p-2! justify-center!' },
+                    columnTitle: { class: 'text-[10px] text-slate-400 font-bold uppercase tracking-wider py-2! text-center!' }
+                }">
+                    <template #body>
+                        <Skeleton />
+                    </template>
+                </Column>
+                <Column field="tanggalMulai" header="Mulai" style="width: 7%;" :pt="{
+                    columnHeaderContent: { class: 'p-2! justify-center!' },
+                    columnTitle: { class: 'text-[10px] text-slate-400 font-bold uppercase tracking-wider py-2! text-center!' }
+                }">
+                    <template #body>
+                        <Skeleton />
+                    </template>
+                </Column>
+                <Column field="tanggalAkhir" header="Selesai" style="width: 7%;" :pt="{
+                    columnHeaderContent: { class: 'p-2! justify-center!' },
+                    columnTitle: { class: 'text-[10px] text-slate-400 font-bold uppercase tracking-wider py-2! text-center!' }
+                }">
+                    <template #body>
+                        <Skeleton />
+                    </template>
+                </Column>
+                <Column field="statusKondisi" header="Kondisi" style="width: 6%;" :pt="{
+                    columnHeaderContent: { class: 'p-2! justify-center!' },
+                    columnTitle: { class: 'text-[10px] text-slate-400 font-bold uppercase tracking-wider py-2! text-center!' }
+                }">
+                    <template #body>
+                        <Skeleton />
+                    </template>
+                </Column>
+                <Column field="statusPaket" header="Status" style="width: 6%;" :pt="{
+                    columnHeaderContent: { class: 'p-2! justify-center!' },
+                    columnTitle: { class: 'text-[10px] text-slate-400 font-bold uppercase tracking-wider py-2! text-center!' }
+                }">
+                    <template #body>
+                        <Skeleton />
+                    </template>
+                </Column>
+                <Column header="Aksi" style="width: 5%;" :pt="{
+                    columnHeaderContent: { class: 'p-2! justify-center!' },
+                    columnTitle: { class: 'text-[10px] text-slate-400 font-bold uppercase tracking-wider py-2! text-center!' }
                 }">
                     <template #body>
                         <Skeleton />
@@ -567,133 +965,200 @@ onMounted(() => {
             </DataTable>
 
         </div>
-        <div v-else="!loading"
-            class="bg-white  rounded-[24px] p-2 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col min-h-full">
+        <div v-else="!loading" ref="tablePrintContainerRef"
+            class="bg-white rounded-[24px] p-2 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col min-h-full">
+
+            <!-- KOP JUDUL KHUSUS DOKUMEN PDF (Tersembunyi di Web, Muncul di PDF) -->
+            <div id="pdf-table-header" style="display: none;"
+                class="mb-3 p-4 bg-white border-b-2 border-slate-800 rounded-xl">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h1 class="text-xl font-black text-slate-900 uppercase tracking-tight">
+                            LAPORAN DAFTAR PAKET PEKERJAAN
+                        </h1>
+                        <p class="text-xs font-semibold text-slate-500 mt-0.5">
+                            Sistem Informasi Pemantauan & Manajemen Proyek (MANTAP BM)
+                        </p>
+                    </div>
+                    <div class="text-right text-xs text-slate-700">
+                        <p><strong>Tahun:</strong> {{ selectedYear || 'Semua Tahun' }} &nbsp;|&nbsp;
+                            <strong>Status:</strong> {{
+                                selectedStatus ? capitalizeFirstLetter(selectedStatus) : 'Semua Status' }}
+                        </p>
+                        <p class="text-[11px] text-slate-500 mt-1">Total Data: <strong>{{ filteredPaket.length
+                        }}</strong> Paket
+                            Pekerjaan</p>
+                    </div>
+                </div>
+            </div>
 
             <!-- Data Table -->
-            <DataTable :value="filteredPaket" rowGroupMode="subheader" scrollable groupRowsBy="jenisPekerjaan"
-                sortMode="single" sortField="jenisPekerjaan" :sortOrder="1" expandableRowGroups
-                class="table-group-custom" v-model:expandedRowGroups="expandedRowGroups" columnResizeMode="fit"
-                @row-click="toDetail" :pt="{
-                    /* WAJIB: Tambahkan 'table-fixed' agar lebar persentase tidak bergeser */
-                    table: { class: 'min-w-full text-sm text-left text-slate-600 border-collapse ' },
-                    thead: { class: 'text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200' },
+            <DataTable :value="filteredPaket" rowGroupMode="subheader" groupRowsBy="jenisPekerjaan" sortMode="single"
+                sortField="jenisPekerjaan" :sortOrder="1" expandableRowGroups class="table-group-custom w-full"
+                v-model:expandedRowGroups="expandedRowGroups" @row-click="toDetail" :pt="{
+                    table: { class: 'w-full text-xs text-left text-slate-600 border-collapse table-fixed' },
+                    thead: { class: 'text-[10px] text-slate-400 font-bold uppercase tracking-wider bg-slate-50 border-b border-slate-200' },
                     tbody: { class: 'divide-y divide-slate-100' },
-                    rowGroupHeaderCell: { colspan: 8 },
-                    // rowGroupHeader: { class: 'cursor-pointer hover:bg-blue-100/50 transition-colors' },
-                    columnResizeIndicator: {
-                        class: 'bg-primary-500 w-[2px]'
-                    },
-                    // /* WAJIB: !p-0 agar grid kita bisa menempel dari ujung ke ujung */
-                    // rowGroupHeaderCell: { class: '!p-0 !bg-blue-50/70 border-b border-blue-200' },
-                    // rowGroupToggler: { class: 'inline-flex! items-center justify-start! mr-3 text-blue-600 hover:text-blue-800' },
-                    // rowGroupTogglerIcon: { class: 'w-4 h-4' }
+                    rowGroupHeaderCell: { colspan: 12, class: 'p-0! bg-slate-50/90! hover:bg-slate-100/90! transition-colors! relative! border-b! border-slate-200!' },
+                    rowGroupToggler: { class: 'absolute! left-2! top-1/2! -translate-y-1/2! z-10! w-6! h-6! inline-flex! items-center! justify-center! text-blue-600 hover:text-blue-800 cursor-pointer!' },
                     bodyRow: { class: 'hover:bg-slate-50/50! transition-colors! border-b! border-slate-50/70! group!' }
-
                 }">
 
-
-
-                <!-- KOLOM NAMA PAKET -->
-                <Column field="name" header="Nama Paket " style="min-width: 300px;min-width: 300px;" :pt="{
-                    columnHeaderContent: {
-                        class: 'p-0! justify-center! text-center'
-                    }, columnTitle: {
-                        class: 'text-xs! text-slate-400 font-bold! px-4 py-4 uppercase! tracking-wider! rounded-tl-xl py-3! px-4!'
-                    }
+                <!-- 1. KOLOM NAMA PAKET (15%) -->
+                <Column field="name" header="Nama Paket" style="width: 13%;" :pt="{
+                    columnHeaderContent: { class: 'p-2! justify-start!' },
+                    columnTitle: { class: 'text-[10px] text-slate-400 font-bold uppercase tracking-wider py-2! pl-3!' }
                 }">
                     <template #body="slotProps">
-                        <div class=" py-3 px-6 font-bold text-left text-blue-950">
+                        <div class="py-2.5 pl-3 pr-2 font-bold text-left text-blue-950 text-xs tracking-wide break-words whitespace-normal leading-snug"
+                            :title="slotProps.data.name">
                             {{ slotProps.data.name }}
                         </div>
                     </template>
                 </Column>
 
-                <!-- KOLOM NILAI PAGU -->
-                <Column field="nilaiPagu" header="Nilai Pagu" style="min-width: 200px;" :pt="{
-                    columnHeaderContent: { class: 'p-0! justify-center!' },
-                    columnTitle: { class: 'text-xs! text-slate-400 font-bold! px-4 py-4 uppercase! tracking-wider! rounded-tl-xl py-3! px-2!' }
+                <!-- 2. KOLOM NILAI PAGU (15%) -->
+                <Column field="nilaiPagu" header="Nilai Pagu" style="width: 14%;" :pt="{
+                    columnHeaderContent: { class: 'p-2! justify-end!' },
+                    columnTitle: { class: 'text-[10px] text-slate-400 font-bold uppercase tracking-wider py-2! pr-2!' }
                 }">
                     <template #body="slotProps">
-                        <div class="px-2 py-5 font-bold text-right text-blue-950  text-sm! flex justify-between">
-                            <span class="">Rp</span>
+                        <div class="py-2.5 px-2 font-semibold text-right text-blue-950 text-xs flex justify-between items-center w-full"
+                            :title="formatRupiah(slotProps.data.nilaiPagu)">
+                            <span>Rp.</span>
                             <span>{{ formatRupiah(slotProps.data.nilaiPagu) }}</span>
                         </div>
                     </template>
                 </Column>
-                <!-- KOLOM NILAI KONTRAK -->
-                <Column field="nilaiKontrak" header="Nilai Kontrak" style="min-width: 200px;" :pt="{
-                    columnHeaderContent: { class: 'p-0! justify-center!' },
-                    columnTitle: { class: 'text-xs! text-slate-400 font-bold! px-4 py-4 uppercase! tracking-wider! rounded-tl-xl py-3! px-4!' }
+
+                <!-- 3. KOLOM NILAI KONTRAK (15%) -->
+                <Column field="nilaiKontrak" header="Nilai Kontrak" style="width: 14%;" :pt="{
+                    columnHeaderContent: { class: 'p-2! justify-end!' },
+                    columnTitle: { class: 'text-[10px] text-slate-400 font-bold uppercase tracking-wider py-2! pr-2!' }
                 }">
                     <template #body="slotProps">
-                        <div class="px-2 py-5 font-bold text-right text-blue-950  text-sm! flex justify-between">
-                            <span class="">Rp.</span>
+                        <div class="py-2.5 px-2 font-semibold text-right text-blue-950 text-xs flex justify-between items-center w-full"
+                            :title="formatRupiah(slotProps.data.nilaiKontrak)">
+                            <span>Rp.</span>
                             <span>{{ formatRupiah(slotProps.data.nilaiKontrak) }}</span>
                         </div>
                     </template>
                 </Column>
-                <!-- KOLOM NILAI KONTRAK -->
-                <Column field="progress" header="Progres Fisik" style="min-width: 150px;" :pt="{
-                    columnHeaderContent: { class: 'p-0! justify-center!' },
-                    columnTitle: { class: 'text-xs! text-center! text-slate-400 font-bold! px-4 py-4 uppercase! tracking-wider! rounded-tl-xl py-3! px-4!' }
-                }">
-                    <!-- <template #header>
-                        <span
-                            class="w-full text-xs! text-slate-400 font-bold! px-4 py-4 uppercase! tracking-wider! rounded-tl-xl py-3! px-4!">Progress
-                            Fisik</span>
-                    </template> -->
-                    <template #body="slotProps">
-                        <div class="px-4 py-5 font-bold text-center text-blue-950  text-sm!">
-                            <!-- {{ formatRupiah(slotProps.data.progress) }} -->
-                            {{ slotProps.data.totalFisikPercentage.toFixed(2) }} %
 
+                <!-- 4. KOLOM FISIK RENCANA (6%) -->
+                <Column field="progress" header="Rencana Fisik" style="width: 6%;" :pt="{
+                    columnHeaderContent: { class: 'p-2! justify-center!' },
+                    columnTitle: { class: 'text-[10px] text-slate-400 font-bold uppercase tracking-wider py-2! text-center!' }
+                }">
+                    <template #body="slotProps">
+                        <div class="py-2.5 font-bold text-center text-blue-950 text-xs">
+                            {{ getPaketPlanPercentage(slotProps.data).toFixed(2) }}%
                         </div>
                     </template>
                 </Column>
 
-                <!-- KOLOM NILAI KONTRAK -->
-                <Column field="progress" header="Progress Keuangan" style="min-width: 150px;" :pt="{
-                    columnHeaderContent: { class: 'p-0! justify-center!' },
-                    columnTitle: { class: 'text-xs! text-center! text-slate-400 font-bold! px-4 py-4 uppercase! tracking-wider! rounded-tl-xl py-3! px-4!' }
+                <!-- 5. KOLOM FISIK AKTUAL (6%) -->
+                <Column field="progress" header="Aktual Fisik" style="width: 6%;" :pt="{
+                    columnHeaderContent: { class: 'p-2! justify-center!' },
+                    columnTitle: { class: 'text-[10px] text-slate-400 font-bold uppercase tracking-wider py-2! text-center!' }
                 }">
+                    <template #body="slotProps">
+                        <div class="py-2.5 font-bold text-center text-blue-950 text-xs">
+                            {{ getPaketActualPercentage(slotProps.data).toFixed(2) }}%
+                        </div>
+                    </template>
+                </Column>
 
+                <!-- 6. KOLOM DEVIASI FISIK (6%) -->
+                <Column field="progress" header="Deviasi" style="width: 6%;" :pt="{
+                    columnHeaderContent: { class: 'p-2! justify-center!' },
+                    columnTitle: { class: 'text-[10px] text-slate-400 font-bold uppercase tracking-wider py-2! text-center!' }
+                }">
                     <template #body="slotProps">
-                        <div class="px-4 py-5 font-bold text-right text-blue-950  text-sm!">
-                            <!-- {{ formatRupiah(slotProps.data.totalKeuanganPercentage) }} -->
-                            {{ slotProps.data.totalKeuanganPercentage.toFixed(2) }} %
+                        <div class="py-2.5 font-bold text-center text-xs"
+                            :class="getPaketDeviationPercentage(slotProps.data) < 0 ? 'text-red-500' : 'text-emerald-500'">
+                            {{ getPaketDeviationPercentage(slotProps.data) > 0 ? '+' : '' }}{{
+                                getPaketDeviationPercentage(slotProps.data).toFixed(2) }}%
                         </div>
                     </template>
                 </Column>
-                <Column field="statusKondisi" header="Kondisi" style="min-width: 150px;" :pt="{
-                    columnHeaderContent: { class: 'p-0! justify-center!' },
-                    columnTitle: { class: 'text-xs! text-slate-400 font-bold! px-4 py-4 uppercase! tracking-wider! rounded-tl-xl py-3! px-4!' }
+
+                <!-- 7. KOLOM PROGRESS KEUANGAN (6%) -->
+                <Column field="progress" header="Aktual Keuangan" style="width: 6%;" :pt="{
+                    columnHeaderContent: { class: 'p-2! justify-center!' },
+                    columnTitle: { class: 'text-[10px] text-slate-400 font-bold uppercase tracking-wider py-2! text-center!' }
                 }">
                     <template #body="slotProps">
-                        <div class="px-4 py-5 font-bold text-right text-blue-950  text-sm!">
-                            <span :class="getStatusBadgeClass(slotProps.data.statusKondisi)">
-                                {{ capitalizeFirstLetter(slotProps.data.statusKondisi) }}</span>
+                        <div class="py-2.5 font-bold text-center text-blue-950 text-xs">
+                            {{ slotProps.data.totalKeuanganPercentage ?
+                                slotProps.data.totalKeuanganPercentage.toFixed(1) + '%' : '0%' }}
                         </div>
                     </template>
                 </Column>
-                <Column field="statusPaket" header="Status" style="min-width: 150px;" :pt="{
-                    columnHeaderContent: { class: 'p-0! justify-center!' },
-                    columnTitle: { class: 'text-xs! text-slate-400 font-bold! px-4 py-4 uppercase! tracking-wider! rounded-tl-xl py-3! px-4!' }
+
+                <!-- 8. KOLOM TGL MULAI (7%) -->
+                <Column field="tanggalMulai" header="Tanggal Mulai" style="width: 7%;" :pt="{
+                    columnHeaderContent: { class: 'p-2! justify-center!' },
+                    columnTitle: { class: 'text-[10px] text-slate-400 font-bold uppercase tracking-wider py-2! text-center!' }
                 }">
                     <template #body="slotProps">
-                        <div class="px-4 py-5 font-bold text-right text-blue-950  text-sm!">
-                            <span
-                                class="px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-md text-[10px] font-bold tracking-wide">{{
-                                    capitalizeFirstLetter(slotProps.data.statusPaket) }}</span>
+                        <div class="py-2.5 font-bold text-center text-blue-950 text-xs truncate"
+                            :title="slotProps.data.tanggalMulai || '-'">
+                            {{ formatDateShort(slotProps.data.tanggalMulai) }}
                         </div>
                     </template>
                 </Column>
-                <Column header="" style="min-width: 150px;" :pt="{
-                    columnHeaderContent: { class: 'p-0! justify-center!' },
-                    columnTitle: { class: 'text-xs! text-slate-400 font-bold! px-4 py-4 uppercase! tracking-wider! rounded-tl-xl py-3! px-4!' }
+
+                <!-- 9. KOLOM TGL SELESAI (7%) -->
+                <Column field="tanggalAkhir" header="Tanggal Selesai" style="width: 7%;" :pt="{
+                    columnHeaderContent: { class: 'p-2! justify-center!' },
+                    columnTitle: { class: 'text-[10px] text-slate-400 font-bold uppercase tracking-wider py-2! text-center!' }
                 }">
                     <template #body="slotProps">
-                        <div class="px-4 py-5 font-bold text-center text-blue-950  text-sm!">
+                        <div class="py-2.5 font-bold text-center text-blue-950 text-xs truncate"
+                            :title="slotProps.data.tanggalAkhir || '-'">
+                            {{ formatDateShort(slotProps.data.tanggalAkhir) }}
+                        </div>
+                    </template>
+                </Column>
+
+                <!-- 10. KOLOM KONDISI (6%) -->
+                <Column field="statusKondisi" header="Kondisi" style="width: 8%;" :pt="{
+                    columnHeaderContent: { class: 'p-2! justify-center!' },
+                    columnTitle: { class: 'text-[10px] text-slate-400 font-bold uppercase tracking-wider py-2! text-center!' }
+                }">
+                    <template #body="slotProps">
+                        <div class="py-2.5 text-center px-1">
+                            <span :class="getStatusBadgeClass(slotProps.data.statusKondisi)"
+                                class="px-1.5 py-0.5 rounded text-[10px] font-bold inline-block truncate max-w-full">
+                                {{ capitalizeFirstLetter(slotProps.data.statusKondisi || 'Aman') }}
+                            </span>
+                        </div>
+                    </template>
+                </Column>
+
+                <!-- 11. KOLOM STATUS PROGRESS (8%) -->
+                <Column field="statusProgress" header="Status" style="width: 8%;" :pt="{
+                    columnHeaderContent: { class: 'p-2! justify-center!' },
+                    columnTitle: { class: 'text-[10px] text-slate-400 font-bold uppercase tracking-wider py-2! text-center!' }
+                }">
+                    <template #body="slotProps">
+                        <div class="py-2.5 text-center px-1">
+                            <span :class="getStatusProgressBadgeClass(getStatusProgress(slotProps.data))"
+                                class="inline-block truncate max-w-full">
+                                {{ getStatusProgress(slotProps.data) }}
+                            </span>
+                        </div>
+                    </template>
+                </Column>
+
+                <!-- 12. KOLOM DELETE / AKSI (5%) -->
+                <Column header="Aksi" style="width: 5%;" :pt="{
+                    columnHeaderContent: { class: 'p-2! justify-center!' },
+                    columnTitle: { class: 'text-[10px] text-slate-400 font-bold uppercase tracking-wider py-2! text-center!' }
+                }">
+                    <template #body="slotProps">
+                        <div class="py-2.5 flex justify-center items-center">
                             <DeleteModal title="Hapus Paket" deskripsi="Apakah Anda yakin ingin menghapus Paket ini?"
                                 :action-hapus="() => deletePaket(slotProps.data.id)" />
                         </div>
@@ -703,66 +1168,53 @@ onMounted(() => {
                 <!-- CUSTOM HEADER GRUP (Baris Expandable) -->
                 <!-- Ini adalah baris "jenisPekerjaan" yang bisa di-klik untuk buka/tutup -->
                 <template #groupheader="slotProps">
-
-
-
-                    <!-- HAPUS justify-between, gunakan flex biasa agar lebar ditentukan oleh anak-anaknya -->
-                    <div class="inline-flex! items-center! w-full!" style="width: max-content;">
-
-                        <!-- Kolom 1 (Sejajar Nama Paket) -->
-                        <!-- 1. Ganti % dengan px. Misal lebar kolom Nama Paket di tabel Anda adalah 350px -->
-                        <!-- 2. Tambahkan bg-slate-50 sticky left-0 z-10 agar menempel saat di-scroll ke kanan -->
-                        <div style="min-width: 250px !important; max-width: 250px !important;"
-                            class="flex items-center justify-between py-2 pr-4">
+                    <div class="w-full flex items-center py-6 transition-colors">
+                        <!-- Kolom 1: Nama Kategori / Jenis Pekerjaan (15%) - Ruang pl-9 untuk Chevron, susun kebawah jika panjang -->
+                        <div class="w-[15%] pl-9 pr-2 flex items-center min-w-0 shrink-0">
                             <span
-                                class="font-bold text-blue-950 text-xs lg:text-sm uppercase tracking-wide whitespace-normal line-clamp-2 leading-snug">
-                                {{ slotProps.data.jenisPekerjaan }}
+                                class="font-extrabold text-blue-950 text-xs uppercase tracking-wide break-words whitespace-normal leading-relaxed"
+                                :title="slotProps.data.jenisPekerjaan == '' ? 'N/A' : slotProps.data.jenisPekerjaan">
+                                {{ slotProps.data.jenisPekerjaan == '' ? 'N/A' : slotProps.data.jenisPekerjaan }}
                             </span>
-                            <Tag rounded severity="info" class="w-6 h-6" :value="filteredPaket.filter(p => p.jenisPekerjaan === slotProps.data.jenisPekerjaan).length
-                                " />
-                            <!-- <span
-                                class="bg-blue-100 text-blue-700 text-[10px] py-0.5 px-2 rounded-full font-bold border border-blue-200 ml-3">
-
-                            </span> -->
                         </div>
 
-                        <!-- BAGIAN KANAN: Total Pagu & Kontrak -->
-                        <template v-if="!expandedRowGroups.includes(slotProps.data.jenisPekerjaan)">
+                        <!-- Kolom 2: Total Nilai Pagu Grup (15%) -->
+                        <div class="w-[13%] px-2 font-extrabold text-xs text-blue-950 flex justify-between items-center shrink-0"
+                            :title="formatRupiah(hitungTotalPaguGrup(slotProps.data.jenisPekerjaan))">
+                            <span>Rp.</span>
+                            <span>{{ formatRupiah(hitungTotalPaguGrup(slotProps.data.jenisPekerjaan)) }}</span>
+                        </div>
 
-                            <!-- Kolom 2 (Sejajar Pagu) -->
-                            <!-- Ganti 12% menjadi min-width px yang SAMA PERSIS dengan lebar <Column field="pagu"> Anda -->
-                            <div style="min-width: 200px;"
-                                class="py-2 px-4 font-extrabold text-md text-right text-blue-950 flex justify-between">
-                                <span class="">Rp.</span>
-                                <span>{{ formatRupiah(hitungTotalPaguGrup(slotProps.data.jenisPekerjaan)) }}</span>
-                            </div>
+                        <!-- Kolom 3: Total Nilai Kontrak Grup (15%) -->
+                        <div class="w-[13%] px-2 font-extrabold text-xs text-blue-950 flex justify-between items-center shrink-0"
+                            :title="formatRupiah(hitungTotalKontrakGrup(slotProps.data.jenisPekerjaan))">
+                            <span>Rp.</span>
+                            <span>{{ formatRupiah(hitungTotalKontrakGrup(slotProps.data.jenisPekerjaan)) }}</span>
+                        </div>
 
-                            <!-- Kolom 3 (Sejajar Kontrak) -->
-                            <!-- Samakan dengan lebar <Column field="kontrak"> -->
-                            <div style="min-width: 200px;"
-                                class="py-2 px-4 font-extrabold text-md text-right text-blue-950 flex justify-between">
-                                <span class="">Rp.</span>
-                                <span>{{ formatRupiah(hitungTotalKontrakGrup(slotProps.data.jenisPekerjaan)) }}</span>
-                            </div>
+                        <!-- Kolom 4: Total Fisik Rencana (6%) -->
+                        <div class="w-[6%] font-bold text-xs text-center text-emerald-700 shrink-0">
+                            <!-- {{ hitungTotalPlanFisikGrup(slotProps.data.jenisPekerjaan) }}% -->
+                        </div>
 
-                            <!-- Kolom 4 (Sejajar Fisik) -->
-                            <!-- Samakan dengan lebar <Column field="progressFisik"> -->
-                            <div style="min-width: 150px;"
-                                class="py-2 px-4 font-extrabold text-emerald-700 text-center">
-                                {{ hitungTotalFisikPercentage(slotProps.data.jenisPekerjaan) }}%
-                            </div>
+                        <!-- Kolom 5: Total Fisik Aktual (6%) -->
+                        <div class="w-[6%] font-bold text-xs text-center text-emerald-700 shrink-0">
+                            <!-- {{ hitungTotalActualFisikGrup(slotProps.data.jenisPekerjaan) }}% -->
+                        </div>
 
-                            <!-- Kolom 5 (Sejajar Keuangan) -->
-                            <!-- Samakan dengan lebar <Column field="progressKeuangan"> -->
-                            <div style="min-width: 150px;" class="py-2 px-4 font-extrabold text-indigo-700 text-center">
-                                {{ hitungTotalKeuanganPercentage(slotProps.data.jenisPekerjaan) }}%
-                            </div>
+                        <!-- Kolom 6: Deviasi (6%) -->
+                        <div class="w-[6%] font-bold text-xs text-center shrink-0"
+                            :class="Number(hitungTotalDeviasiGrup(slotProps.data.jenisPekerjaan)) < 0 ? 'text-red-500' : 'text-emerald-700'">
+                            <!-- {{ Number(hitungTotalDeviasiGrup(slotProps.data.jenisPekerjaan)) > 0 ? '+' : '' }}{{ hitungTotalDeviasiGrup(slotProps.data.jenisPekerjaan) }}% -->
+                        </div>
 
-                            <!-- Kolom 6 & 7 (Kosongkan ruang untuk Kondisi & Status agar tetap lurus) -->
-                            <div style="min-width: 150px;" class="py-2 px-4"></div>
-                            <div style="min-width: 150px;" class="py-2 px-4"></div>
+                        <!-- Kolom 7: Total Keuangan (6%) -->
+                        <div class="w-[6%] font-bold text-xs text-center text-indigo-700 shrink-0">
+                            {{ hitungTotalKeuanganPercentage(slotProps.data.jenisPekerjaan) }}%
+                        </div>
 
-                        </template>
+                        <!-- Kolom 8-12: Placeholder Sisa (31%) -->
+                        <div class="w-[33%] shrink-0"></div>
                     </div>
                 </template>
 
@@ -775,15 +1227,16 @@ onMounted(() => {
 </template>
 <style scoped>
 :deep(.table-group-custom .p-datatable-row-group-header td) {
-    white-space: nowrap !important;
+    padding: 0 !important;
     vertical-align: middle !important;
+    position: relative !important;
 }
 
-/* 2. Pastikan chevron sejajar secara vertikal (inline) */
 :deep(.table-group-custom .p-datatable-row-group-header .p-datatable-row-toggle-button) {
-    display: inline-flex !important;
-    vertical-align: middle !important;
-    margin-right: 0.5rem;
-    /* Jarak chevron dengan teks Anda */
+    position: absolute !important;
+    left: 0.5rem !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    z-index: 10 !important;
 }
 </style>
