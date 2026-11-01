@@ -63,7 +63,7 @@ const statusProgress = computed(() => {
 
     // 3. Jika belum ada target nextInputFisik sama sekali
     if (!props.paket.nextInputFisik) {
-        return 'Belum Upload';
+        return 'NOT UPDATED';
     }
 
     // 4. Proses perbandingan waktu
@@ -78,7 +78,7 @@ const statusProgress = computed(() => {
         return 'Updated';
     } else {
         // Jika hari ini sudah melewati nextInputDate
-        return 'Belum Upload';
+        return 'NOT UPDATED';
     }
 });
 const nilaiKontrak = ref(null);
@@ -641,7 +641,7 @@ const getStatusBadgeClass = (status) => {
 
     if (!status) return 'px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-md text-[10px] font-bold';
     const s = String(status).toLowerCase();
-    if (s.includes('terlambat') || s.includes('rendah') || s.includes('minus') || s.includes('belum upload')) {
+    if (s.includes('terlambat') || s.includes('rendah') || s.includes('minus') || s.includes('not updated')) {
         return 'px-2.5 py-1 bg-red-100 text-red-700 rounded-md text-[10px] font-bold';
     }
     if (s.includes('cepat') || s.includes('tinggi') || s.includes('surplus') || s.includes('updated')) {
@@ -699,7 +699,7 @@ onMounted(() => {
                             class="tab-btn px-6 py-[4px] rounded-l-lg rounded-r-3xl text-sm font-bold transition-all ">Draft</button>
                         <button type="button" @click="paket.statusPaket = 'berjalan'" :disabled="!paket.paketUserId"
                             :class="(paket.statusPaket || '').toLowerCase() == 'berjalan' ? 'bg-blue-950 text-white' : 'text-slate-500 hover:text-blue-950'"
-                            class="tab-btn px-6 py-[4px] rounded-l-lg rounded-r-3xl text-sm font-bold transition-all ">Berjalan</button>
+                            class="tab-btn px-6 py-[4px] rounded-l-lg rounded-r-3xl text-sm font-bold transition-all ">Berkontrak</button>
                         <button type="button" @click="paket.statusPaket = 'selesai'"
                             :disabled="!paket.paketUserId && auth.userRole.value !== 'admin'"
                             :class="(paket.statusPaket || '').toLowerCase() == 'selesai' ? 'bg-blue-950 text-white' : 'text-slate-500 hover:text-blue-950'"
@@ -758,8 +758,7 @@ onMounted(() => {
                     </Message>
                 </FormField>
                 <div>
-                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Jenis
-                        Pekerjaan </label>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Kegiatan </label>
 
                     <input type="text" placeholder="Contoh: Pembangunan Jalan Provinsi"
                         v-model="paket.subProgramKegiatan"
@@ -768,7 +767,7 @@ onMounted(() => {
 
                 <div>
                     <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Program
-                        Kegiatan</label>
+                    </label>
                     <input type="text" placeholder="Contoh: Program Penyelenggaraan Jalan"
                         v-model="paket.programKegiatan"
                         class="w-full bg-slate-50 text-sm font-semibold text-blue-950 rounded-xl px-4 py-3.5 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none placeholder-slate-300">
@@ -776,7 +775,7 @@ onMounted(() => {
 
                 <div>
                     <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Sub
-                        Program Kegiatan</label>
+                        Kegiatan</label>
                     <Select v-model="paket.jenisPekerjaan" :options="jenisPekerjaanOptions" optionLabel="label"
                         optionValue="value" placeholder="Pilih Sub Program Kegiatan..."
                         filterPlaceholder="Cari Nama Sub Program Kegiatan..." :pt="{
