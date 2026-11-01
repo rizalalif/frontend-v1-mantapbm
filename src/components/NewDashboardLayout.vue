@@ -8,8 +8,8 @@ import { useBreakpoints, breakpointsTailwind } from '@vueuse/core';
 import Breadcrumb from 'primevue/breadcrumb';
 import { useBreadcrumb } from '@/composables/useBreadcrumb';
 import { useDashboardExport } from '@/composables/useDashboardExport';
-import logoPu from '@/assets/images/compressed_logo_no_bg-3.webp';
-import logoKaltim from '@/assets/images/images.png';
+// import logoPu from '@/assets/images/compressed_logo_no_bg-3.webp';
+// import logoKaltim from '@/assets/images/images.png';
 import SidebarIcon from '@primeicons/vue/sidebar';
 const { isGeneratingPdf, triggerExport } = useDashboardExport();
 const breakpoints = useBreakpoints(breakpointsTailwind)
