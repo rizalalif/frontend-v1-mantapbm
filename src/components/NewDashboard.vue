@@ -958,11 +958,11 @@ onUnmounted(() => {
             <h2 class="text-3xl font-extrabold text-blue-950 mb-1">30</h2>
         </div> -->
             <!-- 4. Nilai Kontrak -->
-            <CardTop bgColor="bg-[#082D58]" title="Total Nilai Kontrak"
-                :value="dashboardData.nilaiKontrak ? formatWithCustomSeparators(Number(dashboardData.nilaiKontrak), ',', '.') : 0">
-            </CardTop>
             <CardTop bgColor="bg-[#1C3D5A]" title="Total Nilai Pagu"
                 :value="dashboardData.nilaiPagu ? formatWithCustomSeparators(Number(dashboardData.nilaiPagu), ',', '.') : 0">
+            </CardTop>
+            <CardTop bgColor="bg-[#082D58]" title="Total Nilai Kontrak"
+                :value="dashboardData.nilaiKontrak ? formatWithCustomSeparators(Number(dashboardData.nilaiKontrak), ',', '.') : 0">
             </CardTop>
             <!-- <div
                 class="bg-white rounded-3xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col justify-between">
@@ -982,8 +982,7 @@ onUnmounted(() => {
 
             <!-- 7. Nominal Progres Keuangan -->
             <CardTop bgColor="bg-[#D35400]" title="Realisasi Keuangan (Rp)"
-                :value="formatWithCustomSeparators(Number(dashboardData.realisasiKeuanganNominal), ',', '.')"
-                v-if="dashboardData.realisasiKeuanganNominal">
+                :value="formatWithCustomSeparators(Number(dashboardData.realisasiKeuanganNominal), ',', '.')">
             </CardTop>
 
         </div>
@@ -1082,11 +1081,11 @@ onUnmounted(() => {
                                 <!-- <RouterLink :to="'/paket/detail'"> -->
                                 <td class="text-left px-4 py-5">
                                     <p class="font-bold text-blue-950 mb-0.5 line-clamp-2">{{ data.jenisPekerjaan
-                                    }}</p>
+                                        }}</p>
                                 </td>
                                 <td class="text-center px-4 py-5 font-bold text-blue-950 text-nowrap">{{
                                     formatRupiah(data.akumulasiPagu)
-                                    }}</td>
+                                }}</td>
                                 <td class="text-center px-4 py-5 font-bold text-blue-950 text-nowrap">{{
                                     formatRupiah(data.akumulasiKontrak) }}</td>
 
