@@ -155,7 +155,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="h-[300px]">
+                <div class="h-[300px] overflow-hidden">
                     <canvas id="chartUang" ref="chartUangRef"></canvas>
                 </div>
             </div>
@@ -588,29 +588,36 @@ const downloadPdf = async () => {
         const cleanKode = String(kode).replace(/[^a-zA-Z0-9_-]/g, '_');
         const filename = `Detail_Pemantauan_${cleanKode}.pdf`;
 
-        // 3. Tangkap snapshot elemen dengan html2canvas-pro
+        // 3. Tangkap snapshot elemen dengan html2canvas-pro pada resolusi desktop
         const canvas = await html2canvas(summaryPdfRef.value, {
-            scale: 2, // Resolusi tinggi (retina)
-            useCORS: true,
+            scale: 2, // Resolusi tinggi Retina 2x
+            useCORS: true, // Mendukung ubin Leaflet & gambar dokumentasi remote
             logging: false,
-            windowWidth: 1440, // Standar desktop 1440px agar konten melebar proporsional
+            windowWidth: 1440, // Viewport 1440px agar PERSIS SESUAI TAMPILAN WEB DESKTOP
             onclone: (clonedDoc, clonedElement) => {
-                // A. Tampilkan judul khusus PDF di DOM tiruan (di web tetap tersembunyi)
+                // A. Tampilkan judul khusus PDF di DOM tiruan
                 const pdfHeader = clonedElement.querySelector('#pdf-header-title') || clonedDoc.getElementById('pdf-header-title');
                 if (pdfHeader) {
                     pdfHeader.style.display = 'block';
                 }
 
-                // B. Terapkan background bg.webp khusus pada dokumen tiruan PDF
+                // B. Sembunyikan kontrol zoom leaflet (+ / -) dan icon modal expand
+                const mapControls = clonedElement.querySelectorAll('.leaflet-control-zoom');
+                mapControls.forEach(ctrl => ctrl.style.display = 'none');
+
+                const expandIcons = clonedElement.querySelectorAll('svg.pi-expand, [class*="Expand"]');
+                expandIcons.forEach(icon => icon.style.display = 'none');
+
+                // C. Terapkan background bg.webp khusus pada dokumen tiruan PDF
                 clonedElement.style.backgroundImage = `url(${bgImage})`;
                 clonedElement.style.backgroundSize = 'cover';
                 clonedElement.style.backgroundPosition = 'center';
                 clonedElement.style.padding = '14px 20px';
-                clonedElement.style.borderRadius = '12px';
+                clonedElement.style.borderRadius = '16px';
                 clonedElement.style.minHeight = 'auto';
 
-                // C. Suntikkan CSS print-compact khusus ke clonedDoc
-                // Menormalisasi tinggi kartu dan jarak agar rasio aspek pas dan sebanding
+                // D. Injeksi CSS penataan proporsional TANPA merusak layout asli web
+                // PENTING: JANGAN MERUSAK TINGGI KARTU (.h-[380px]) ATAU MEMPERKECIL FONT SECARA DESTRUKTIF
                 const styleTag = clonedDoc.createElement('style');
                 styleTag.innerHTML = `
                     #printable-summary-content {
@@ -622,55 +629,60 @@ const downloadPdf = async () => {
                     }
                     #pdf-header-title {
                         display: block !important;
-                        margin-bottom: 8px !important;
-                        padding: 8px 14px !important;
+                        margin-bottom: 12px !important;
+                        padding: 10px 16px !important;
                     }
                     #pdf-header-title h1 {
-                        font-size: 18px !important;
+                        font-size: 20px !important;
                         line-height: 1.2 !important;
                     }
-                    .mb-8 { margin-bottom: 8px !important; }
-                    .mb-6 { margin-bottom: 8px !important; }
-                    .mb-4 { margin-bottom: 6px !important; }
-                    .gap-6 { gap: 10px !important; }
-                    .gap-4 { gap: 8px !important; }
-                    .p-5 { padding: 10px 12px !important; }
-                    .p-4 { padding: 8px 10px !important; }
+
+                    /* Padatkan jarak vertikal sedikit agar seimbang dan pas di lembar A4 Landscape */
+                    .mb-8 { margin-bottom: 12px !important; }
+                    .mb-6 { margin-bottom: 12px !important; }
+                    .mb-4 { margin-bottom: 8px !important; }
+                    .gap-6 { gap: 12px !important; }
+                    .gap-4 { gap: 10px !important; }
+                    .p-5 { padding: 14px 16px !important; }
+                    .p-4 { padding: 12px 14px !important; }
                     
-                    /* Ketinggian kartu dinormalisasi agar pas dan proporsional */
-                    .h-\\[380px\\] { height: 195px !important; }
-                    .h-\\[300px\\] { height: 175px !important; }
-                    .min-h-\\[250px\\] { min-height: 165px !important; height: 165px !important; }
-                    
-                    /* Skala font tetap sangat tajam dan proporsional */
-                    .text-2xl { font-size: 17px !important; }
-                    .text-base { font-size: 13px !important; }
-                    .text-sm { font-size: 11px !important; }
-                    .text-xs { font-size: 10px !important; }
-                    .text-\\[11px\\] { font-size: 9.5px !important; }
+                    /* Pastikan canvas chart terkunci rapi di dalam kartu */
+                    #chartUang {
+                        max-width: 100% !important;
+                        max-height: 100% !important;
+                        overflow: hidden !important;
+                    }
                 `;
                 clonedDoc.head.appendChild(styleTag);
             }
         });
 
-        // 4. Inisialisasi dokumen jsPDF dengan ukuran kertas SEBANDING (Proporsional) dengan konten
+        // 4. Inisialisasi dokumen jsPDF KERTAS A4 LANDSCAPE (SAMA PERSIS DENGAN PaketPekerjaan.vue & NewDashboard.vue)
         const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        const margin = 6; // Margin 6 mm merata di semua sisi
-
-        // Menggunakan basis tinggi standar 210 mm (setara A4), lebar kertas dihitung sebanding persis dengan kanvas
-        const targetHeight = 210;
-        const contentHeight = targetHeight - (margin * 2); // 198 mm
-        const contentWidth = (canvas.width * contentHeight) / canvas.height;
-        const targetWidth = contentWidth + (margin * 2);
-
         const pdf = new jsPDF({
-            orientation: targetWidth >= targetHeight ? 'landscape' : 'portrait',
+            orientation: 'landscape', // A4 LANDSCAPE SESUAI INSTRUKSI
             unit: 'mm',
-            format: [targetWidth, targetHeight]
+            format: 'a4'
         });
 
-        // 5. Render tepat 1 halaman, margin pas merata 6mm tanpa space kosong berlebih di kiri & kanan
-        pdf.addImage(imgData, 'JPEG', margin, margin, contentWidth, contentHeight, undefined, 'FAST');
+        const pageWidth = 297;  // A4 Landscape Width (mm)
+        const pageHeight = 210; // A4 Landscape Height (mm)
+        const margin = 8;       // Margin 8 mm merata di semua sisi
+
+        const printableWidth = pageWidth - (margin * 2);   // 281 mm
+        const printableHeight = pageHeight - (margin * 2); // 194 mm
+
+        // 5. Hitung rasio seragam (fit-to-page) agar pas tepat 1 halaman A4 Landscape
+        const ratio = Math.min(printableWidth / canvas.width, printableHeight / canvas.height);
+        const finalWidth = canvas.width * ratio;
+        const finalHeight = canvas.height * ratio;
+
+        // 6. Posisikan di tengah kertas secara horizontal dan vertikal
+        const posX = margin + (printableWidth - finalWidth) / 2;
+        const posY = margin + (printableHeight - finalHeight) / 2;
+
+        // 7. Tambahkan ke PDF tepat 1 halaman tanpa loop addPage
+        pdf.addImage(imgData, 'JPEG', posX, posY, finalWidth, finalHeight, undefined, 'FAST');
         pdf.save(filename);
 
     } catch (err) {
@@ -793,7 +805,7 @@ const loadKurvaUang = async () => {
                         data: aktualFisik,
                         borderColor: '#22c55e',
                         backgroundColor: '#22c55e',
-                        tension: 0.4,
+                        tension: 0.35,
                         borderWidth: 2,
                         datalabels: {
                             anchor: 'end', // Place at the top of the data point
@@ -805,7 +817,7 @@ const loadKurvaUang = async () => {
                         data: aktualKeuangan,
                         borderColor: '#f97316',
                         backgroundColor: '#f97316',
-                        tension: 0.4,
+                        tension: 0.35,
                         borderWidth: 2,
                         datalabels: {
                             anchor: 'start', // Place at the bottom of the data point
@@ -815,7 +827,7 @@ const loadKurvaUang = async () => {
                 ]
             },
             options: {
-                clip: false,
+                clip: true,
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
