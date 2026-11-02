@@ -314,16 +314,26 @@ const submitForm = async () => {
         <Dialog v-model:visible="modalVisible" pt:root:class="border-0! bg-transparent! max-w-[70%]!"
             pt:mask:class="backdrop-blur-xs">
             <template #container="{ closeCallback }">
-                <!-- Form Input Progres Keuangan -->
+                <!-- Form Input Progres Fisik -->
                 <form @submit.prevent="submitForm">
                     <div
-                        class="bg-white rounded-xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative overflow-hidden">
+                        class="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative overflow-y-auto max-h-[90vh]">
 
-                        <h3 class="font-bold text-sm text-blue-950 uppercase tracking-wide mb-6">
-                            {{ isEditMode ? 'Edit Laporan Progres Fisik' : 'Tambah Laporan Progres Fisik' }}
-                        </h3>
+                        <!-- Sticky Header -->
+                        <div class="sticky top-0 z-20 bg-white px-8 py-5 border-b border-slate-100 flex items-center justify-between">
+                            <h3 class="font-bold text-sm text-blue-950 uppercase tracking-wide">
+                                {{ isEditMode ? 'Edit Laporan Progres Fisik' : 'Tambah Laporan Progres Fisik' }}
+                            </h3>
+                            <button type="button" @click="closeCallback"
+                                class="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-lg hover:bg-slate-50 cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+                        <div class="p-8 pt-6">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
                             <div class="grid grid-cols-2 gap-3">
                                 <div class="col-span-1">
                                     <label
@@ -464,13 +474,11 @@ const submitForm = async () => {
                                     </Message> -->
                                 </div>
                             </div>
-                            <div class="md:col-span-3 flex flex-row justify-center">
+                            <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <ImageUpload v-model="formProgress.fotoTipikal" label="Tipikal Potongan Melintang"
                                     :isEditMode="isEditMode" :existing-url="existingFotos.fotoTipikal" />
                                 <ImageUpload v-model="formProgress.fotoStreetMap" label="Street Map"
                                     :isEditMode="isEditMode" :existing-url="existingFotos.fotoStreetMap" />
-                                <ImageUpload v-model="formProgress.fotoDokumentasi" label="Dokumentasi"
-                                    :isEditMode="isEditMode" :existing-url="existingFotos.fotoDokumentasi" />
                             </div>
                         </div>
 
@@ -489,6 +497,7 @@ const submitForm = async () => {
                                 </svg>
                                 {{ isLoading ? 'Menyimpan...' : (isEditMode ? 'Update Laporan' : 'Simpan') }}
                             </button>
+                        </div>
                         </div>
                     </div>
                 </form>

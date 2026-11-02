@@ -18,8 +18,8 @@
         <template #content="{ files, removeFileCallback }">
             <div v-if="files?.length > 0">
                 <div v-for="(file, i) of files" :key="file.name + file.type + file.size"
-                    class="group relative rounded-lg overflow-hidden border border-surface-200 dark:border-surface-700">
-                    <img :src="file.objectURL" :alt="file.name" class="w-full h-32 object-cover" />
+                    class="group relative rounded-lg overflow-hidden border border-surface-200 dark:border-surface-700 bg-slate-50 flex flex-col items-center justify-center p-2">
+                    <img :src="file.objectURL" :alt="file.name" class="w-full max-h-48 object-contain rounded" />
                     <div
                         class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <button type="button"
@@ -28,7 +28,7 @@
                             <Times />
                         </button>
                     </div>
-                    <div class="p-2">
+                    <div class="p-2 w-full text-center">
                         <div class="text-xs font-medium truncate">{{ file.name }}</div>
                         <div class="text-xs text-muted-color">{{ formatSize(file.size) }}</div>
                     </div>
@@ -36,10 +36,10 @@
             </div>
         </template>
         <template #empty>
-            <div v-if="isEditMode" @click="chooseCallback()"
-                class="border-2 border-dashed border-surface-200 dark:border-surface-700 rounded-xl p-12 text-center cursor-pointer">
-                <p class="text-muted-color m-0!">{{ label }}</p>
-                <img class="w-full h-32 object-cover" :src="existingUrl" alt="">
+            <div v-if="isEditMode && existingUrl" @click="chooseCallback()"
+                class="border-2 border-dashed border-surface-200 dark:border-surface-700 rounded-xl p-4 text-center cursor-pointer flex flex-col items-center justify-center bg-slate-50">
+                <p class="text-muted-color text-xs font-semibold mb-2">{{ label }}</p>
+                <img class="w-full max-h-48 object-contain rounded" :src="existingUrl" alt="Preview Gambar">
             </div>
             <div v-else @click="chooseCallback()"
                 class="border-2 border-dashed border-surface-200 dark:border-surface-700 rounded-xl p-12 text-center cursor-pointer">
