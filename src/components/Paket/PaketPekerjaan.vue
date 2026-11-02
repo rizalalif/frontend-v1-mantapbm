@@ -1199,6 +1199,7 @@ onMounted(() => {
 
                         <!-- Kolom 5: Total Fisik Aktual (6%) -->
                         <div class="w-[6%] font-bold text-xs text-center text-emerald-700 shrink-0">
+                            {{ hitungTotalFisikPercentage(slotProps.data.jenisPekerjaan) }}%
                             <!-- {{ hitungTotalActualFisikGrup(slotProps.data.jenisPekerjaan) }}% -->
                         </div>
 

@@ -81,6 +81,23 @@ const statusProgress = computed(() => {
         return 'NOT UPDATED';
     }
 });
+
+// Pengecekan STP (Serah Terima Pekerjaan)
+const hasStp = computed(() => {
+    const p = props.paket || {};
+    const stp = p.serahTerima || p.serahTerimaPekerjaan || {};
+    const no = p.noStp || stp.noStp || stp.noSurat;
+    const tgl = p.tglStp || stp.tglStp || stp.tglSerahTerima;
+    return Boolean(no || tgl);
+});
+
+const isStpComplete = computed(() => {
+    const p = props.paket || {};
+    const stp = p.serahTerima || p.serahTerimaPekerjaan || {};
+    const no = p.noStp || stp.noStp || stp.noSurat;
+    const tgl = p.tglStp || stp.tglStp || stp.tglSerahTerima;
+    return Boolean(no && tgl);
+});
 const nilaiKontrak = ref(null);
 const selectedTahun = ref(null);
 const filteredTahun = ref([]);
@@ -429,7 +446,16 @@ const handleSubmitAdd = async () => {
 const handleSubmitUpdate = async () => {
     paket.paketUserId = paket.paketUserId ? paket.paketUserId : null;
 
+    if (isStpComplete.value || hasStp.value) {
+        paket.statusPaket = 'selesai';
+    }
+
     const payload = getChangedPayload(originalData.value, paket);
+
+    // Pastikan jika STP terisi, statusPaket tetap 'selesai' di payload
+    if (isStpComplete.value || hasStp.value) {
+        payload.statusPaket = 'selesai';
+    }
 
     // Cek apakah ada perubahan sama sekali
     if (Object.keys(payload).length === 0) {
@@ -559,6 +585,9 @@ watch(() => props.paket, (newPaket) => {
             if (newPaket.statusPaket) {
                 paket.statusPaket = String(newPaket.statusPaket).toLowerCase();
             }
+            if (hasStp.value) {
+                paket.statusPaket = 'selesai';
+            }
             originalData.value = { ...paket }
             // Object.assign(originalData.value, newPaket);
 
@@ -620,6 +649,8 @@ watch(() => props.paket, (newPaket) => {
 watch(
     () => paket.paketUserId,
     (newPicId, oldPicId) => {
+        // Jika STP sudah terisi, kunci status tetap selesai dan jangan ubah ke draft/berjalan
+        if (hasStp.value || isStpComplete.value) return;
 
         // Jangan timpa status jika sedang berada dalam mode Edit dan watcher ini dipicu saat load awal
         if (isEditMode.value && oldPicId === undefined) return;
@@ -694,20 +725,44 @@ onMounted(() => {
 
                     <div class="flex items-center gap-2 p-1.5 bg-white rounded-lg w-fit border border-slate-200">
                         <button type="button" @click="paket.statusPaket = 'draft'"
-                            :disabled="auth.userRole.value === 'user'"
-                            :class="(paket.statusPaket || '').toLowerCase() == 'draft' ? 'bg-blue-950 text-white' : 'text-slate-500 hover:text-blue-950'"
-                            class="tab-btn px-6 py-[4px] rounded-l-lg rounded-r-3xl text-sm font-bold transition-all ">Draft</button>
-                        <button type="button" @click="paket.statusPaket = 'berjalan'" :disabled="!paket.paketUserId"
-                            :class="(paket.statusPaket || '').toLowerCase() == 'berjalan' ? 'bg-blue-950 text-white' : 'text-slate-500 hover:text-blue-950'"
-                            class="tab-btn px-6 py-[4px] rounded-l-lg rounded-r-3xl text-sm font-bold transition-all ">Berkontrak</button>
+                            :disabled="auth.userRole.value === 'user' || isStpComplete"
+                            :class="[
+                                (paket.statusPaket || '').toLowerCase() == 'draft' ? 'bg-blue-950 text-white' : 'text-slate-500 hover:text-blue-950',
+                                isStpComplete ? 'opacity-40 cursor-not-allowed hover:text-slate-500!' : ''
+                            ]"
+                            class="tab-btn px-6 py-[4px] rounded-l-lg rounded-r-3xl text-sm font-bold transition-all">Draft</button>
+                        <button type="button" @click="paket.statusPaket = 'persiapan'"
+                            :disabled="isStpComplete"
+                            :class="[
+                                (paket.statusPaket || '').toLowerCase() == 'persiapan' ? 'bg-blue-950 text-white' : 'text-slate-500 hover:text-blue-950',
+                                isStpComplete ? 'opacity-40 cursor-not-allowed hover:text-slate-500!' : ''
+                            ]"
+                            class="tab-btn px-6 py-[4px] rounded-l-lg rounded-r-3xl text-sm font-bold transition-all">Persiapan</button>
+                        <button type="button" @click="paket.statusPaket = 'proses'"
+                            :disabled="isStpComplete"
+                            :class="[
+                                (paket.statusPaket || '').toLowerCase() == 'proses' ? 'bg-blue-950 text-white' : 'text-slate-500 hover:text-blue-950',
+                                isStpComplete ? 'opacity-40 cursor-not-allowed hover:text-slate-500!' : ''
+                            ]"
+                            class="tab-btn px-6 py-[4px] rounded-l-lg rounded-r-3xl text-sm font-bold transition-all">Proses</button>
+                        <button type="button" @click="paket.statusPaket = 'berjalan'"
+                            :disabled="!paket.paketUserId || isStpComplete"
+                            :class="[
+                                (paket.statusPaket || '').toLowerCase() == 'berjalan' ? 'bg-blue-950 text-white' : 'text-slate-500 hover:text-blue-950',
+                                isStpComplete ? 'opacity-40 cursor-not-allowed hover:text-slate-500!' : ''
+                            ]"
+                            class="tab-btn px-6 py-[4px] rounded-l-lg rounded-r-3xl text-sm font-bold transition-all">Berkontrak</button>
                         <button type="button" @click="paket.statusPaket = 'selesai'"
-                            :disabled="!paket.paketUserId && auth.userRole.value !== 'admin'"
+                            :disabled="(!paket.paketUserId && auth.userRole.value !== 'admin') || isStpComplete"
                             :class="(paket.statusPaket || '').toLowerCase() == 'selesai' ? 'bg-blue-950 text-white' : 'text-slate-500 hover:text-blue-950'"
                             class="tab-btn px-6 py-[4px] rounded-l-lg rounded-r-3xl text-sm font-bold transition-all">Selesai</button>
                         <button type="button" @click="paket.statusPaket = 'batal'"
-                            :disabled="!paket.paketUserId && auth.userRole.value !== 'admin'"
-                            :class="(paket.statusPaket || '').toLowerCase() == 'batal' ? 'bg-red-500 text-white' : 'text-slate-500 hover:text-blue-950'"
-                            class="tab-btn px-6 py-[4px] rounded-l-lg rounded-r-3xl text-sm font-bold transition-all ">Batal</button>
+                            :disabled="(!paket.paketUserId && auth.userRole.value !== 'admin') || isStpComplete"
+                            :class="[
+                                (paket.statusPaket || '').toLowerCase() == 'batal' ? 'bg-red-500 text-white' : 'text-slate-500 hover:text-blue-950',
+                                isStpComplete ? 'opacity-40 cursor-not-allowed hover:text-slate-500!' : ''
+                            ]"
+                            class="tab-btn px-6 py-[4px] rounded-l-lg rounded-r-3xl text-sm font-bold transition-all">Batal</button>
                     </div>
                 </div>
 
@@ -758,7 +813,8 @@ onMounted(() => {
                     </Message>
                 </FormField>
                 <div>
-                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Kegiatan </label>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Kegiatan
+                    </label>
 
                     <input type="text" placeholder="Contoh: Pembangunan Jalan Provinsi"
                         v-model="paket.subProgramKegiatan"
