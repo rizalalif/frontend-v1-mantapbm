@@ -8,8 +8,9 @@ import { useBreakpoints, breakpointsTailwind } from '@vueuse/core';
 import Breadcrumb from 'primevue/breadcrumb';
 import { useBreadcrumb } from '@/composables/useBreadcrumb';
 import { useDashboardExport } from '@/composables/useDashboardExport';
-// import logoPu from '@/assets/images/compressed_logo_no_bg-3.webp';
-// import logoKaltim from '@/assets/images/images.png';
+import logoKaltim from '@/assets/images/logo_pemprov_kaltim.webp';
+import logoBinaMarga from '@/assets/images/logo_binamarga.webp';
+import motifKaltim from '@/assets/images/motif_kaltim.jpg';
 import SidebarIcon from '@primeicons/vue/sidebar';
 const { isGeneratingPdf, triggerExport } = useDashboardExport();
 const breakpoints = useBreakpoints(breakpointsTailwind)
@@ -77,22 +78,22 @@ const pageList = ref([
     {
         id: 7,
         isAdmin: false,
-        name: 'Portal Eksternal',
+        name: 'Teras Jalan',
         isExternal: true,
-        url: 'https://binamarga.pu.go.id/',
+        url: 'https://binamargakaltim.netlify.app/',
         target: '_blank',
         icon: 'M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14'
     },
 ])
 
-const yearOptions = ref([
-    { label: '2026', value: 2026 },
-    { label: '2025', value: 2025 },
-    { label: '2024', value: 2024 },
-    { label: '2023', value: 2023 },
-    { label: '2022', value: 2022 },
-])
-const selectedYear = ref(new Date().getFullYear())
+const currentYear = new Date().getFullYear();
+const yearOptions = ref(
+    Array.from({ length: 5 }, (_, i) => {
+        const year = currentYear - i;
+        return { label: String(year), value: year };
+    })
+);
+const selectedYear = ref(currentYear);
 
 // State untuk minimize/collapse sidebar
 const isSidebarMinimized = ref(localStorage.getItem('sidebar_minimized') === 'true');
@@ -185,9 +186,20 @@ onUnmounted(() => {
         class="bg-[url('../assets/images/bg.webp')] bg-cover bg-center flex h-screen w-full overflow-hidden text-slate-800 custom-font">
         <!-- SIDEBAR -->
         <aside v-if="!isMobile" :class="isSidebarMinimized ? 'w-20 px-3 py-6' : 'w-[18%] p-6'"
-            class="bg-[#072343] m-4 rounded-3xl flex flex-col z-10 relative shrink-0 transition-all duration-300 ease-in-out">
+            class="bg-[#072343] m-4 rounded-3xl flex flex-col z-10 relative shrink-0 transition-all duration-300 ease-in-out overflow-hidden">
+            <!-- Ornamen Grafis Tradisional Kaltim (Fade ke Atas & Warna Abu-Abu) -->
+            <div class="absolute bottom-0 left-0 right-0 h-[480px] pointer-events-none select-none z-0 overflow-hidden">
+                <div class="w-full h-full bg-cover bg-bottom bg-no-repeat grayscale opacity-20 brightness-110 contrast-125"
+                    :style="{
+                        backgroundImage: `url(${motifKaltim})`,
+                        maskImage: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 45%, rgba(0,0,0,0) 100%)',
+                        WebkitMaskImage: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 45%, rgba(0,0,0,0) 100%)'
+                    }">
+                </div>
+            </div>
+
             <div :class="isSidebarMinimized ? 'justify-center px-0' : 'justify-between px-2'"
-                class="flex items-center mb-10 mt-2 transition-all">
+                class="flex items-center mb-10 mt-2 transition-all relative z-10">
                 <!-- Area Logo & Teks Brand -->
                 <div class="flex items-center gap-3 min-w-0"
                     :class="{ 'cursor-pointer hover:scale-105 transition-transform': isSidebarMinimized }"
@@ -212,7 +224,7 @@ onUnmounted(() => {
                 </button>
             </div>
 
-            <nav class="flex flex-col gap-12 font-medium">
+            <nav class="flex flex-col gap-12 font-medium relative z-10">
                 <div class="flex flex-col gap-1">
                     <!-- Judul Seksi / Garis Pembatas dengan Transisi Fade-Up -->
                     <Transition name="fade-up" mode="out-in">
@@ -224,16 +236,22 @@ onUnmounted(() => {
                     </Transition>
 
                     <template v-for="page in filteredPageList" :key="page.id">
-                        <!-- Link Eksternal -->
+                        <!-- Link Eksternal (Ghost Button / Card Border Style dengan Suffix Icon & Aksen Gold) -->
                         <a v-if="page.isExternal" :href="page.url" :target="page.target || '_blank'"
                             rel="noopener noreferrer" :title="isSidebarMinimized ? page.name : ''"
-                            :class="isSidebarMinimized ? 'justify-center px-0 py-3.5' : 'gap-4 px-4 py-4'"
-                            class="flex items-center rounded-[20px] transition-all text-slate-400 hover:text-slate-200 hover:bg-white/5">
-                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            :class="isSidebarMinimized ? 'justify-center px-0 py-3.5' : 'justify-between px-4 py-3.5'"
+                            class="flex items-center rounded-[20px] transition-all border border-white/15 bg-white/5 hover:bg-amber-400/10 hover:border-amber-400/40 text-amber-300 hover:text-amber-200 shadow-sm group">
+                            <!-- Label Teks (Prefix jika expanded) -->
+                            <span v-if="!isSidebarMinimized" class="truncate font-semibold tracking-wide text-sm capitalize">
+                                {{ page.name }}
+                            </span>
+
+                            <!-- Suffix Icon (Ikon Eksternal di Sisi Kanan) -->
+                            <svg class="w-4 h-4 shrink-0 text-amber-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" :d="page.icon">
                                 </path>
                             </svg>
-                            <span v-if="!isSidebarMinimized" class="truncate">{{ page.name }}</span>
                         </a>
 
                         <!-- RouterLink Internal -->
@@ -296,14 +314,65 @@ onUnmounted(() => {
                 </div>
             </nav>
 
-            <!-- 2 LOGO DI PALING BAWAH & TENGAH SIDEBAR -->
-            <!-- <div :class="isSidebarMinimized ? 'flex-col gap-2' : 'flex-row gap-4'"
-                class="mt-auto pt-6 border-t border-white/10 flex items-center justify-center transition-all">
-                <img :src="logoPu" alt="Logo PU" :class="isSidebarMinimized ? 'h-7' : 'h-10'"
-                    class="w-auto object-contain hover:scale-105 transition-all" />
-                <img :src="logoKaltim" alt="Logo Pemprov Kaltim" :class="isSidebarMinimized ? 'h-7' : 'h-10'"
-                    class="w-auto object-contain hover:scale-105 transition-all" />
-            </div> -->
+            <!-- ==================== FOOTER LOGO & SOSIAL MEDIA ==================== -->
+            <div class="mt-auto pt-4 border-t border-white/10 flex flex-col gap-4 transition-all relative z-10">
+                <!-- Baris Logo: Pemprov Kaltim & Bina Marga -->
+                <div :class="isSidebarMinimized ? 'flex-col gap-3' : 'flex-row gap-4'"
+                    class="flex items-center justify-center transition-all">
+                    <!-- Logo Pemprov Kaltim -->
+                    <img :src="logoKaltim" alt="Logo Pemprov Kaltim"
+                        :class="isSidebarMinimized ? 'h-8' : 'h-20'"
+                        class="w-auto object-contain hover:scale-105 transition-transform drop-shadow"
+                        title="Pemerintah Provinsi Kalimantan Timur" />
+
+                    <!-- Logo Bina Marga (Dibungkus Container Bundar) -->
+                    <div :class="isSidebarMinimized ? 'w-8 h-8' : 'w-20 h-20'"
+                        class="rounded-full overflow-hidden bg-white flex items-center justify-center shrink-0 shadow-md hover:scale-105 transition-transform p-0.5"
+                        title="Bina Marga Provinsi Kalimantan Timur">
+                        <img :src="logoBinaMarga" alt="Logo Bina Marga Kaltim"
+                            class="w-full h-full object-cover rounded-full" />
+                    </div>
+                </div>
+
+                <!-- Daftar Akun Instagram Resmi -->
+                <div :class="isSidebarMinimized ? 'items-center px-0' : 'items-start px-2'"
+                    class="flex flex-col gap-2 transition-all">
+                    <!-- Akun 1: @dpupr_kaltim -->
+                    <a href="https://www.instagram.com/dpupr_kaltim" target="_blank" rel="noopener noreferrer"
+                        :title="isSidebarMinimized ? '@dpupr_kaltim' : ''"
+                        class="flex items-center gap-2.5 text-slate-300 hover:text-white transition-colors group text-xs font-medium">
+                        <!-- Icon Instagram Berwarna Merah -->
+                        <svg class="w-4 h-4 text-red-500 group-hover:scale-110 transition-transform shrink-0"
+                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" viewBox="0 0 24 24">
+                            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                        </svg>
+                        <span v-if="!isSidebarMinimized" class="truncate tracking-wide">
+                            @dpupr_kaltim
+                        </span>
+                    </a>
+
+                    <!-- Akun 2: @binamargakaltim -->
+                    <a href="https://www.instagram.com/binamargakaltim" target="_blank" rel="noopener noreferrer"
+                        :title="isSidebarMinimized ? '@binamargakaltim' : ''"
+                        class="flex items-center gap-2.5 text-slate-300 hover:text-white transition-colors group text-xs font-medium">
+                        <!-- Icon Instagram Berwarna Merah -->
+                        <svg class="w-4 h-4 text-red-500 group-hover:scale-110 transition-transform shrink-0"
+                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" viewBox="0 0 24 24">
+                            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                        </svg>
+                        <span v-if="!isSidebarMinimized" class="truncate tracking-wide">
+                            @binamargakaltim
+                        </span>
+                    </a>
+                </div>
+            </div>
+            <!-- =================================================================== -->
         </aside>
 
         <div class="flex-1 flex flex-col min-w-0">
@@ -388,12 +457,12 @@ onUnmounted(() => {
                             <template v-for="page in filteredPageList" :key="page.id">
                                 <a v-if="page.isExternal" :href="page.url" :target="page.target || '_blank'"
                                     rel="noopener noreferrer"
-                                    class="flex items-center gap-4 px-4 py-4 rounded-xl transition-all hover:bg-slate-50 hover:text-blue-950 text-slate-400">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    class="flex items-center justify-between px-4 py-3.5 rounded-xl transition-all border border-slate-200 bg-amber-50/50 hover:bg-amber-100/50 text-amber-700 hover:text-amber-800 group">
+                                    <span class="font-semibold text-sm capitalize">{{ page.name }}</span>
+                                    <svg class="w-4 h-4 shrink-0 text-amber-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                             :d="page.icon"></path>
                                     </svg>
-                                    <span>{{ page.name }}</span>
                                 </a>
                                 <RouterLink v-else :to="`/${page.route}`"
                                     :class="isCurrentRoute(page.route) ? 'bg-blue-950 text-white' : 'hover:bg-slate-50 hover:text-blue-950 text-slate-400'"

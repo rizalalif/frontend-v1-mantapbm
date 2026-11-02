@@ -569,7 +569,7 @@ const loadKurvaFisik = async () => {
                         data: aktual,
                         borderColor: '#3b82f6',
                         backgroundColor: '#3b82f6',
-                        tension: 0.6,
+                        tension: 0.35,
                         borderWidth: 2,
                         datalabels: {
                             anchor: 'end', // Place at the top of the data point
@@ -581,7 +581,7 @@ const loadKurvaFisik = async () => {
                         data: aktualKeuangan,
                         borderColor: '#eab308',
                         backgroundColor: '#eab308',
-                        tension: 0.4,
+                        tension: 0.35,
                         borderWidth: 2,
                         datalabels: {
                             anchor: 'start', // Place at the bottom of the data point
@@ -591,7 +591,7 @@ const loadKurvaFisik = async () => {
                 ]
             },
             options: {
-                clip: false,
+                clip: true,
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
@@ -782,21 +782,21 @@ const downloadPdf = async () => {
     try {
         isGeneratingPdf.value = true;
 
-        // 1. Pastikan gambar latar belakang telah ter-load
+        // 1. Pastikan gambar latar belakang telah ter-load di cache browser
         await preloadImage(bgImage);
 
-        // 2. Ambil tahun aktif untuk penamaan file dan judul
+        // 2. Ambil tahun aktif untuk penamaan file dan kop judul
         const tahun = route.query.tahun || new Date().getFullYear();
         const filename = `MANTAP_BM_${tahun}.pdf`;
 
         // 3. Render elemen menjadi kanvas resolusi tinggi dengan html2canvas-pro
         const canvas = await html2canvas(dashboardPdfRef.value, {
             scale: 2, // Kualitas cetak tajam (Retina 2x)
-            useCORS: true, // Izinkan ubin OpenStreetMap & gambar API
+            useCORS: true, // Izinkan ubin OpenStreetMap & gambar dokumentasi
             logging: false,
-            windowWidth: 960, // Viewport 960px proporsional dengan aspek rasio A4 Portrait
+            windowWidth: 1440, // Viewport 1440px agar PERSIS SESUAI TAMPILAN WEB DESKTOP
             onclone: (clonedDoc, clonedElement) => {
-                // A. Tampilkan judul PDF khusus di DOM tiruan
+                // A. Tampilkan kop judul PDF di DOM tiruan
                 const pdfHeader = clonedElement.querySelector('#dashboard-pdf-header') || clonedDoc.getElementById('dashboard-pdf-header');
                 if (pdfHeader) {
                     pdfHeader.style.display = 'block';
@@ -813,110 +813,66 @@ const downloadPdf = async () => {
                 clonedElement.style.backgroundImage = `url(${bgImage})`;
                 clonedElement.style.backgroundSize = 'cover';
                 clonedElement.style.backgroundPosition = 'center';
-                clonedElement.style.padding = '18px 24px';
+                clonedElement.style.padding = '14px 20px';
                 clonedElement.style.borderRadius = '16px';
                 clonedElement.style.minHeight = 'auto';
 
-                // D. Injeksi CSS penataan layout portrait yang proporsional
+                // D. Injeksi CSS penataan layout landscape yang proporsional sesuai tampilan web desktop
+                // PENTING: JANGAN MEROMBAK STRUKTUR GRID DESKTOP (8 kartu di atas, 3 kolom di tengah, 4 kartu galeri)
                 const printStyle = clonedDoc.createElement('style');
                 printStyle.innerHTML = `
                     #printable-dashboard-content {
-                        width: 960px !important;
-                        max-width: 960px !important;
+                        width: 1440px !important;
+                        max-width: 1440px !important;
                         min-height: auto !important;
-                        padding: 18px 24px !important;
+                        padding: 14px 20px !important;
                         box-sizing: border-box !important;
                     }
                     #dashboard-pdf-header {
                         display: block !important;
-                        margin-bottom: 14px !important;
-                        padding: 12px 16px !important;
+                        margin-bottom: 12px !important;
+                        padding: 10px 16px !important;
                     }
                     #dashboard-pdf-header h1 {
-                        font-size: 22px !important;
+                        font-size: 20px !important;
                         line-height: 1.2 !important;
                     }
 
-                    /* 1. Summary Cards: 3 Kolom x 2 Baris (Mengisi ruang secara vertikal) */
-                    .grid.grid-cols-2.md\\:grid-cols-3.xl\\:grid-cols-6 {
-                        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-                        gap: 12px !important;
-                        margin-bottom: 14px !important;
-                    }
+                    /* Padatkan jarak vertikal sedikit agar pas proporsional di A4 Landscape */
+                    .gap-5 { gap: 10px !important; }
+                    .gap-6 { gap: 12px !important; }
+                    .gap-4 { gap: 10px !important; }
+                    .mb-6 { margin-bottom: 12px !important; }
+                    .mb-5 { margin-bottom: 8px !important; }
+                    .p-6 { padding: 14px 16px !important; }
 
-                    /* 2. Middle Section: Ditata menjadi 2 Kolom Vertikal */
-                    .grid.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-3 {
-                        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-                        gap: 12px !important;
-                        margin-bottom: 14px !important;
-                    }
-
-                    /* Grafik Progres: Lebar Penuh (Span 2 Kolom) dengan tinggi cukup */
-                    .md\\:col-start-1.md\\:col-end-3 {
-                        grid-column: span 2 !important;
-                        height: 270px !important;
-                        padding: 16px !important;
-                    }
-
-                    /* Paket Kritis: Kolom Kiri */
-                    .bg-white.rounded-\\[24px\\].shadow-\\[0_8px_30px_rgb\\(0\\,0\\,0\\,0\\.04\\)\\].border.border-slate-100.h-\\[300px\\] {
-                        height: 270px !important;
-                        padding: 16px !important;
-                    }
-
-                    /* Peta Sebaran: Kolom Kanan */
-                    .md\\:col-span-1 {
-                        grid-column: span 1 !important;
-                        height: 270px !important;
-                        padding: 16px !important;
-                    }
-                    .md\\:col-span-1 #map {
-                        min-height: 185px !important;
-                        height: 185px !important;
-                    }
-
-                    /* Summary By Jenis Pekerjaan: Lebar Penuh (Span 2 Kolom), tinggi dinamis agar tabel tidak meluber */
-                    .md\\:col-span-2.z-5 {
-                        grid-column: span 2 !important;
-                        height: auto !important;
-                        min-height: 220px !important;
-                        padding: 16px !important;
+                    /* Pastikan chart dan canvas tidak keluar dari kontainernya */
+                    #chartFisik {
+                        max-width: 100% !important;
+                        max-height: 100% !important;
                         overflow: hidden !important;
                     }
-
-                    /* 3. Galeri Dokumentasi: 2 Kolom x 2 Baris */
-                    .grid.grid-cols-1.sm\\:grid-cols-2.lg\\:grid-cols-4 {
-                        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-                        gap: 12px !important;
-                    }
-                    .h-44 {
-                        height: 130px !important;
-                    }
-
-                    .mb-6 { margin-bottom: 14px !important; }
-                    .mb-5 { margin-bottom: 10px !important; }
-                    .p-6 { padding: 14px 16px !important; }
                 `;
                 clonedDoc.head.appendChild(printStyle);
             }
         });
 
-        // 4. Inisialisasi dokumen jsPDF KERTAS A4 PORTRAIT
+        // 4. Inisialisasi dokumen jsPDF KERTAS A4 LANDSCAPE (SAMA PERSIS DENGAN PaketPekerjaan.vue)
         const imgData = canvas.toDataURL('image/jpeg', 0.95);
         const pdf = new jsPDF({
-            orientation: 'portrait', // PORTRAIT SESUAI INSTRUKSI
+            orientation: 'landscape', // A4 LANDSCAPE SESUAI INSTRUKSI
             unit: 'mm',
             format: 'a4'
         });
 
-        const pageWidth = pdf.internal.pageSize.getWidth();   // 210 mm
-        const pageHeight = pdf.internal.pageSize.getHeight(); // 297 mm
-        const margin = 6; // Margin 6 mm
+        const pageWidth = 297;  // A4 Landscape Width (mm)
+        const pageHeight = 210; // A4 Landscape Height (mm)
+        const margin = 8;       // Margin 8 mm merata di semua sisi
 
-        const printableWidth = pageWidth - (margin * 2);   // 198 mm
-        const printableHeight = pageHeight - (margin * 2); // 285 mm
+        const printableWidth = pageWidth - (margin * 2);   // 281 mm
+        const printableHeight = pageHeight - (margin * 2); // 194 mm
 
-        // 5. Hitung rasio seragam (fit-to-page) agar pas tepat 1 halaman portrait
+        // 5. Hitung rasio seragam (fit-to-page) agar pas tepat 1 halaman A4 Landscape
         const ratio = Math.min(printableWidth / canvas.width, printableHeight / canvas.height);
         const finalWidth = canvas.width * ratio;
         const finalHeight = canvas.height * ratio;
@@ -931,6 +887,7 @@ const downloadPdf = async () => {
 
     } catch (error) {
         console.error('Gagal membuat PDF Dashboard:', error);
+        alert('Terjadi kesalahan saat memproses PDF Dashboard.');
     } finally {
         isGeneratingPdf.value = false;
     }
@@ -1058,7 +1015,7 @@ onUnmounted(() => {
                         @click="openModal('chartFisik', 'Grafik Progres Fisik (Rencana vs Realisasi)')" />
                 </div>
                 <div
-                    class="flex-1 rounded-2xl flex items-center justify-center text-slate-400 text-sm font-medium relative flex-col pb-4">
+                    class="flex-1 w-full rounded-2xl flex items-center justify-center text-slate-400 text-sm font-medium relative flex-col pb-4 overflow-hidden">
                     <div v-if="isEmptyFisik" class="flex flex-col items-center justify-center text-center w-full">
                         <i class="fas fa-chart-line text-gray-300 mb-3" style="font-size: 3rem;"></i>
                         <p class="italic">Belum ada data progres</p>
