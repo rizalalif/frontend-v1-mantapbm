@@ -64,7 +64,8 @@
                         Nomor Surat Serah Terima
                     </label>
                     <input type="text" v-model="form.noStp" required placeholder="Contoh: 005/BAST/BM/2026"
-                        class="w-full bg-slate-50 text-sm font-bold text-blue-950 rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none placeholder-slate-400" />
+                        :disabled="isStpComplete"
+                        class="w-full bg-slate-50 text-sm font-bold text-blue-950 rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none placeholder-slate-400 disabled:opacity-70 disabled:cursor-not-allowed" />
                 </div>
 
                 <!-- 2. Tanggal -->
@@ -73,13 +74,15 @@
                         Tanggal Serah Terima
                     </label>
                     <input type="date" v-model="form.tglStp" required
-                        class="w-full bg-slate-50 text-sm font-bold text-blue-950 rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none" />
+                        :disabled="isStpComplete"
+                        class="w-full bg-slate-50 text-sm font-bold text-blue-950 rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none disabled:opacity-70 disabled:cursor-not-allowed" />
                 </div>
 
                 <!-- Action Button -->
                 <div class="flex items-center justify-end pt-4 border-t border-slate-100">
-                    <button type="submit" :disabled="isLoading"
-                        class="px-8 py-3 rounded-full text-sm font-bold text-white bg-orange-500 hover:bg-orange-600 transition-all shadow-md shadow-orange-500/20 disabled:opacity-50 flex items-center gap-2">
+                    <button type="submit" :disabled="isLoading || isStpComplete"
+                        :class="isStpComplete ? 'bg-emerald-600 text-white cursor-not-allowed opacity-90' : 'bg-orange-500 hover:bg-orange-600 text-white shadow-md shadow-orange-500/20 disabled:opacity-50'"
+                        class="px-8 py-3 rounded-full text-sm font-bold transition-all flex items-center gap-2">
                         <svg v-if="isLoading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
                             </circle>
@@ -87,7 +90,10 @@
                                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
                             </path>
                         </svg>
-                        <span>{{ isLoading ? 'Menyimpan...' : 'Simpan Serah Terima' }}</span>
+                        <svg v-else-if="isStpComplete" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>{{ isLoading ? 'Menyimpan...' : (isStpComplete ? 'Selesai' : 'Simpan Serah Terima') }}</span>
                     </button>
                 </div>
             </form>
@@ -132,6 +138,15 @@ const isFisik100Percent = computed(() => {
     return totalActualPercentage.value >= 100;
 });
 
+// Pengecekan apakah serah terima sudah terisi lengkap / berstatus selesai
+const isStpComplete = computed(() => {
+    const stpData = props.paket?.serahTerima || props.paket?.serahTerimaPekerjaan || {};
+    const no = props.paket?.noStp || stpData.noStp || stpData.noSurat || form.value.noStp;
+    const tgl = props.paket?.tglStp || stpData.tglStp || stpData.tglSerahTerima || form.value.tglStp;
+    const isPaketSelesai = String(props.paket?.statusPaket || '').toLowerCase() === 'selesai';
+    return Boolean((no && tgl && isPaketSelesai) || (props.paket?.noStp && props.paket?.tglStp) || (stpData.noStp && stpData.tglStp));
+});
+
 // Sinkronisasi data awal jika serah terima sudah pernah disimpan
 watch(
     () => props.paket,
@@ -160,6 +175,7 @@ const handleSubmit = async () => {
 
         // Kirim request ke endpoint serah terima backend
         await api.put(`/paket/${targetId}/serah-terima`, payload);
+        await api.put(`/paket/${targetId}`, { statusPaket: 'selesai' });
 
         emit('submit-success', 'success', 'Berhasil', 'Data Serah Terima Pekerjaan berhasil disimpan.', 'stp');
         emit('refresh');
