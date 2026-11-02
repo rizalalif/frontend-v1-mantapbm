@@ -42,6 +42,7 @@ const formProgress = ref({
     actualFinance: null,
     deviationFinance: null,
     status: "draft",
+    tglLaporan: new Date().toISOString().split('T')[0],
     keterangan: null,
 });
 
@@ -60,7 +61,8 @@ const openModal = (item = null) => {
             actualFinance: item.actualFinance !== null && item.actualFinance !== undefined ? Number(item.actualFinance) : null,
             deviationFinance: item.deviationFinance !== null && item.deviationFinance !== undefined ? Number(item.deviationFinance) : null,
             status: item.status,
-            keterangan: item.keterangan,
+            tglLaporan: item.tglLaporan ? String(item.tglLaporan).split('T')[0] : new Date().toISOString().split('T')[0],
+            keterangan: item.keterangan || null,
         };
         originalData.value = { ...normalizedItem };
         formProgress.value = { ...normalizedItem };
@@ -78,6 +80,7 @@ const openModal = (item = null) => {
             actualFinance: 0,
             deviationFinance: 0,
             status: "Sesuai Target",
+            tglLaporan: new Date().toISOString().split('T')[0],
             keterangan: null,
         };
         originalData.value = { ...defaultData };
@@ -144,7 +147,8 @@ const submitForm = async () => {
             actualPercentage: Number(formProgress.value.actualPercentage) || 0,
             paguPercentage: Number(formProgress.value.paguPercentage) || 0,
             status: selectedStatus.value || formProgress.value.status || "Sesuai Target",
-            keterangan: formProgress.value.keterangan
+            tglLaporan: formProgress.value.tglLaporan ? new Date(formProgress.value.tglLaporan).toISOString() : null,
+            keterangan: formProgress.value.keterangan || null
         };
 
         const isUpdate = !!editingId.value;
@@ -183,13 +187,23 @@ const submitForm = async () => {
                 <!-- Form Input Progres Keuangan -->
                 <form @submit.prevent="submitForm">
                     <div
-                        class="bg-white rounded-xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative overflow-hidden">
+                        class="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative overflow-y-auto max-h-[90vh]">
 
-                        <h3 class="font-bold text-sm text-blue-950 uppercase tracking-wide mb-6">
-                            {{ isEditMode ? 'Edit Laporan Progres Keuangan' : 'Tambah Laporan Progres Keuangan' }}
-                        </h3>
+                        <!-- Sticky Header -->
+                        <div class="sticky top-0 z-20 bg-white px-8 py-5 border-b border-slate-100 flex items-center justify-between">
+                            <h3 class="font-bold text-sm text-blue-950 uppercase tracking-wide">
+                                {{ isEditMode ? 'Edit Laporan Progres Keuangan' : 'Tambah Laporan Progres Keuangan' }}
+                            </h3>
+                            <button type="button" @click="closeCallback"
+                                class="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-lg hover:bg-slate-50 cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+                        <div class="p-8 pt-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
                             <div class="grid grid-cols-2 gap-3">
                                 <div class="col-span-1">
                                     <label
@@ -274,22 +288,25 @@ const submitForm = async () => {
                                     mode="decimal" suffix=" %" locale="id-ID" class="w-full"
                                     input-class="w-full! bg-slate-50! text-sm! font-bold! text-blue-950! rounded-xl! px-4! py-3! border-none! focus:ring-2! focus:ring-orange-500! focus:outline-none!" />
                             </div>
-                            <!-- <div>
-                                <label
-                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Deviasi
-                                    Keuangan</label>
-                                <input type="text" readonly v-model="formProgress.deviationFinance"
-                                    class="w-full bg-red-50 text-sm font-bold text-red-600 rounded-xl px-4 py-3 border-none focus:outline-none">
-                            </div> -->
 
-                            <!-- <div class="md:col-span-3">
+                            <!-- FIELD TANGGAL LAPORAN (COLSPAN 2) -->
+                            <div class="col-span-1 md:col-span-2">
+                                <label
+                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Tanggal
+                                    Laporan</label>
+                                <input type="date" v-model="formProgress.tglLaporan"
+                                    class="w-full bg-slate-50 text-sm font-semibold text-blue-950 rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none">
+                            </div>
+
+                            <!-- FIELD KETERANGAN (COLSPAN 2) -->
+                            <div class="col-span-1 md:col-span-2">
                                 <label
                                     class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Keterangan
-                                    / Kendala</label>
-                                <textarea rows="2" v-model="formProgress.keterangan"
-                                    class="w-full bg-slate-50 text-sm font-medium text-blue-950 rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none resize-none"
-                                    placeholder="Tuliskan keterangan laporan..."></textarea>
-                            </div> -->
+                                    </label>
+                                <textarea rows="3" v-model="formProgress.keterangan"
+                                    class="w-full bg-slate-50 text-sm font-medium text-blue-950 rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none resize-none placeholder-slate-300"
+                                    placeholder="Tuliskan keterangan laporan progres keuangan..."></textarea>
+                            </div>
                         </div>
 
                         <!-- ACTION BUTTONS -->
@@ -307,6 +324,7 @@ const submitForm = async () => {
                                 </svg>
                                 {{ isLoading ? 'Menyimpan...' : (isEditMode ? 'Update Laporan' : 'Simpan') }}
                             </button>
+                        </div>
                         </div>
                     </div>
                 </form>
