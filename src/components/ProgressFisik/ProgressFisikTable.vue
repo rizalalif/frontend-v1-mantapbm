@@ -84,12 +84,12 @@
                             {{ progress.planPercentage }}%
                         </td>
                         <td class="px-4 py-4 text-center font-bold text-blue-950">
-                            {{ progress.actualPercentage }}%
+                            {{ progress.cumulativeActualPercentage ?? progress.actualPercentage }}%
                         </td>
                         <td class="px-4 py-4 text-center font-bold"
-                            :class="Number(progress.deviationFisik) < 0 ? 'text-red-500' : 'text-emerald-500'">
-                            {{ Number(progress.deviationFisik) > 0 ? '+' : '' }}{{
-                                progress.deviationFisik }}%
+                            :class="Number(progress.cumulativeDeviation ?? progress.deviationFisik) < 0 ? 'text-red-500' : 'text-emerald-500'">
+                            {{ Number(progress.cumulativeDeviation ?? progress.deviationFisik) > 0 ? '+' : '' }}{{
+                                progress.cumulativeDeviation ?? progress.deviationFisik }}%
                         </td>
                         <td class="px-4 py-4 text-center font-bold">
                             <div class="px-0! text-center" :class="getStatusBadgeClass(progress.status)">
@@ -165,10 +165,52 @@ const props = defineProps({
     paketId: String
 });
 
-const filteredProgressList = computed(() => {
+// 1. Computed untuk mengurutkan secara kronologis serta menghitung akumulasi persentase dan deviasi kumulatif
+const progressListWithCumulative = computed(() => {
     if (!props.progressList || !Array.isArray(props.progressList)) return [];
 
-    return props.progressList.filter(progress => {
+    // Clone array agar tidak memutasi props
+    const sortedList = [...props.progressList].sort((a, b) => {
+        // Prioritas 1: Urutkan berdasarkan nomor bulan (monthNumber)
+        const monthA = Number(a?.monthNumber) || 0;
+        const monthB = Number(b?.monthNumber) || 0;
+        if (monthA !== monthB) return monthA - monthB;
+
+        // Prioritas 2: Urutkan berdasarkan minggu ke- (mingguKe)
+        const weekA = Number(a?.mingguKe) || 0;
+        const weekB = Number(b?.mingguKe) || 0;
+        if (weekA !== weekB) return weekA - weekB;
+
+        // Prioritas 3: Fallback ke tglLaporan atau createdAt
+        const dateA = new Date(a?.tglLaporan || a?.createdAt || 0).getTime();
+        const dateB = new Date(b?.tglLaporan || b?.createdAt || 0).getTime();
+        return dateA - dateB;
+    });
+
+    // Hitung running total akumulasi persentase & deviasi kumulatif
+    let runningActual = 0;
+    return sortedList.map(item => {
+        const weeklyPercentage = Number(item?.actualPercentage) || 0;
+        runningActual += weeklyPercentage;
+
+        // Akumulasi persentase aktual per minggu
+        const cumulativeActualPercentage = parseFloat(runningActual.toFixed(2));
+
+        // Hitung deviasi = cumulativeActualPercentage - planPercentage
+        const plan = Number(item?.planPercentage) || 0;
+        const cumulativeDeviation = parseFloat((cumulativeActualPercentage - plan).toFixed(2));
+
+        return {
+            ...item,
+            cumulativeActualPercentage,
+            cumulativeDeviation
+        };
+    });
+});
+
+// 2. Filter data berdasarkan status dan bulan dari daftar yang sudah memiliki field kumulatif
+const filteredProgressList = computed(() => {
+    return progressListWithCumulative.value.filter(progress => {
         if (!progress) return false;
 
         let matchStatus = true;
@@ -178,7 +220,7 @@ const filteredProgressList = computed(() => {
 
         let matchMonth = true;
         if (selectedMonth.value && selectedMonth.value !== 'all') {
-            matchMonth = progress.monthName.toLowerCase() === selectedMonth.value.toLowerCase();
+            matchMonth = String(progress.monthName || '').toLowerCase() === String(selectedMonth.value).toLowerCase();
         }
 
         return matchStatus && matchMonth;
@@ -225,8 +267,11 @@ const handleExportExcel = () => {
             no: index + 1,
             actualNominal: progress?.actualNominal ?? '-',
             actualPercentage: progress?.actualPercentage ?? '-',
+            // Field baru: akumulasi persentase aktual per minggu
+            cumulativeActualPercentage: progress?.cumulativeActualPercentage ?? '-',
             createdAt: progress?.createdAt ?? '-',
-            deviationFisik: progress?.deviationFisik ?? '-',
+            // Gunakan deviasi kumulatif (dengan fallback ke deviationFisik bawaan jika ada)
+            deviationFisik: progress?.cumulativeDeviation ?? progress?.deviationFisik ?? '-',
             id: progress?.id,
             keterangan: progress?.keterangan || '-',
             mingguKe: progress?.mingguKe ?? '-',
@@ -243,6 +288,8 @@ const handleExportExcel = () => {
             { header: 'No', key: 'no', width: 5 },
             { header: 'Actual Nominal', key: 'actualNominal', width: 50 },
             { header: 'Actual Persentase', key: 'actualPercentage', width: 25 },
+            // Kolom baru disisipkan setelah Actual Persentase
+            { header: 'Akumulasi Progress Aktual', key: 'cumulativeActualPercentage', width: 25 },
             { header: 'Created At', key: 'createdAt', width: 35 },
             { header: 'Deviation Fisik', key: 'deviationFisik', width: 20 },
             { header: 'ID', key: 'id', width: 20 },
