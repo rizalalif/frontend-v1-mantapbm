@@ -341,7 +341,6 @@ const openEditModal = (progress) => {
 };
 
 const getProgress = (data) => {
-    props.progressList.push(data)
     emit('refresh');
 };
 

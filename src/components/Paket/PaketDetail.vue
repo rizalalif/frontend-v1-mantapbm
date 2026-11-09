@@ -64,6 +64,7 @@ import AdendumTable from '../Adendum/AdendumTable.vue';
 import SerahTerimaForm from '../SerahTerima/SerahTerimaForm.vue';
 
 const { setPaketName } = useBreadcrumb();
+const docRef = ref(null);
 
 async function getDetailPaket() {
 
@@ -88,10 +89,16 @@ async function getDetailPaket() {
     }
 }
 
-const onDataAdded = async (severity, status, message, tabTarget) => {
+const refreshPaketAndDocs = async () => {
+    paket.value = await getDetailPaket();
+    if (docRef.value?.fetchDocumentations) {
+        docRef.value.fetchDocumentations();
+    }
+};
 
-    paket.value = await getDetailPaket()
-    activeTab.value = tabTarget
+const onDataAdded = async (severity, status, message, tabTarget) => {
+    await refreshPaketAndDocs();
+    activeTab.value = tabTarget;
     toast.add({
         severity: severity,
         summary: status,
@@ -99,7 +106,13 @@ const onDataAdded = async (severity, status, message, tabTarget) => {
         group: 'top-center',
         life: 2000
     });
-}
+};
+
+watch(activeTab, (newTab) => {
+    if (newTab === 'dokumentasi' && docRef.value?.fetchDocumentations) {
+        docRef.value.fetchDocumentations();
+    }
+});
 
 onMounted(async () => {
     if (route.name == 'paket-detail') {
@@ -198,7 +211,7 @@ watch(
 
                     <ProgressFisikTable isVisibleHeader="false" :progress-list="paket?.progressFisiks"
                         @submit-success="onDataAdded" :paketId="paket?.id" :paket="paket"
-                        @refresh="async () => { paket = await getDetailPaket() }" />
+                        @refresh="refreshPaketAndDocs" />
                 </div>
             </Transition>
 
@@ -207,7 +220,7 @@ watch(
                 <div id="tab-keuangan" class="tab-content" v-show="activeTab === 'keuangan'">
                     <ProgressKeuanganTable :isVisibleHeader="true" :progress-list="paket?.progressKeuangans"
                         @submit-success="onDataAdded" :paketId="paket?.id" :paket="paket"
-                        @refresh="async () => { paket = await getDetailPaket() }" />
+                        @refresh="refreshPaketAndDocs" />
 
                     <!-- <ProgressKeuanganForm :paket="paket" @refresh="async () => { paket = await getDetailPaket() }" /> -->
                 </div>
@@ -216,7 +229,7 @@ watch(
             <!-- ================= TAB D: DOKUMENTASI ================= -->
             <Transition name="fade">
                 <div id="tab-dokumentasi" class="tab-content" v-show="activeTab === 'dokumentasi'">
-                    <Documentation :paketId="paket?.id" />
+                    <Documentation ref="docRef" :paketId="paket?.id" />
 
                 </div>
             </Transition>

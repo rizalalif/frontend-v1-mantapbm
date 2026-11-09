@@ -4,6 +4,7 @@ import api, { API_BASE_URL, BASE_URL } from '@/services/api';
 import { useAuth } from "@/lib/Auth";
 import { getChangedPayload, listOfMonths } from "@/lib/Helper";
 import ImageUpload from "./ImageUpload.vue";
+import ProgressDokumentasiUpload from "./ProgressDokumentasiUpload.vue";
 
 const auth = useAuth();
 
@@ -19,16 +20,23 @@ const isLoading = ref(false);
 const editingId = ref(null);
 const dateMonth = ref(null);
 const isVisibleSubmitUpdate = computed(() => {
+    if (!isEditMode.value) return false;
 
+    // Jika ada file dokumentasi baru yang dipilih atau ada foto existing yang ditandai hapus, tombol simpan WAJIB muncul!
+    if (
+        (newDokumentasiFiles.value && newDokumentasiFiles.value.length > 0) ||
+        (deletedPhotoIds.value && deletedPhotoIds.value.length > 0)
+    ) {
+        return true;
+    }
 
-    if (!isEditMode.value) return false
     const payload = getChangedPayload(originalData.value, formProgress.value);
 
-    // Cek apakah ada perubahan sama sekali
+    // Cek apakah ada perubahan data teks/form
     if (Object.keys(payload).length === 0) {
-        return false
+        return false;
     }
-    return true
+    return true;
 });
 // State untuk menyimpan URL gambar dari database
 const existingFotos = ref({
@@ -36,6 +44,12 @@ const existingFotos = ref({
     fotoStreetMap: null,
     fotoDokumentasi: null
 });
+
+// State untuk dokumentasi per progres fisik
+const existingDokumentasis = ref([]);
+const newDokumentasiFiles = ref([]);
+const deletedPhotoIds = ref([]);
+const dokumentasiUploadRef = ref(null);
 const BASE_IMAGE_URL = `${BASE_URL}/images/progress-fisik/`;
 const monthName = ref(listOfMonths);
 const isEditMode = computed(() => !!editingId.value);
@@ -98,6 +112,13 @@ const openModal = (item = null) => {
             fotoDokumentasi: item.fotoDokumentasi ? BASE_IMAGE_URL + item.fotoDokumentasi : null,
         };
 
+        // Muat dokumentasi existing jika ada
+        existingDokumentasis.value = Array.isArray(item.documentations) ? [...item.documentations] : [];
+        newDokumentasiFiles.value = [];
+        deletedPhotoIds.value = [];
+        if (dokumentasiUploadRef.value?.resetUploadState) {
+            dokumentasiUploadRef.value.resetUploadState();
+        }
 
         originalData.value = { ...normalizedItem };
         formProgress.value = { ...normalizedItem };
@@ -105,6 +126,14 @@ const openModal = (item = null) => {
         // selectedStatus.value = item.status || "Sesuai Target";
     } else {
         editingId.value = null;
+        existingDokumentasis.value = [];
+        newDokumentasiFiles.value = [];
+        deletedPhotoIds.value = [];
+        if (dokumentasiUploadRef.value?.resetUploadState) {
+            dokumentasiUploadRef.value.resetUploadState();
+        } else if (dokumentasiUploadRef.value?.clearStagedFiles) {
+            dokumentasiUploadRef.value.clearStagedFiles();
+        }
         const defaultData = {
             id: null,
             paketProgressFisikId: props.paketId || props.paket?.id || "",
@@ -129,6 +158,16 @@ const openModal = (item = null) => {
     }
     dateMonth.value = null;
     modalVisible.value = true;
+};
+
+// Handler tandai foto existing untuk dihapus (staged delete)
+const handleStageDeletePhoto = (photoId) => {
+    if (!photoId) return;
+    if (!deletedPhotoIds.value.includes(photoId)) {
+        deletedPhotoIds.value.push(photoId);
+    }
+    // Langsung hapus dari array tampilan agar seketika hilang dari preview
+    existingDokumentasis.value = existingDokumentasis.value.filter(d => d.id !== photoId);
 };
 
 // Expose openModal agar bisa dipanggil oleh komponen parent
@@ -232,7 +271,13 @@ const submitForm = async () => {
         const isUpdate = !!editingId.value;
         const payloadToSend = isUpdate ? getChangedPayload(originalData.value, fullPayload) : fullPayload;
 
-        if (isUpdate && Object.keys(payloadToSend).length === 0) {
+        // Hanya return jika tidak ada perubahan data progres, tidak ada file dokumentasi baru, DAN tidak ada foto yang ditandai dihapus
+        if (
+            isUpdate && 
+            Object.keys(payloadToSend).length === 0 && 
+            newDokumentasiFiles.value.length === 0 &&
+            deletedPhotoIds.value.length === 0
+        ) {
             modalVisible.value = false;
             return;
         }
@@ -241,16 +286,65 @@ const submitForm = async () => {
             ? `/progress-fisik/${editingId.value}`
             : `/progress-fisik`;
 
+        // Jalankan PUT/POST ke /progress-fisik jika ada field yang berubah atau saat buat baru
+        let response = null;
+        if (!isUpdate || Object.keys(payloadToSend).length > 0) {
+            response = isUpdate
+                ? await api.put(url, payloadToSend, { headers: { "Content-Type": "multipart/form-data" } })
+                : await api.post(url, payloadToSend, { headers: { "Content-Type": "multipart/form-data" } });
+        }
 
-        const response = isUpdate
-            ? await api.put(url, payloadToSend, { headers: { "Content-Type": "multipart/form-data" } })
-            : await api.post(url, payloadToSend, { headers: { "Content-Type": "multipart/form-data" } });
+        const progressFisikIdResult = response?.data?.data?.id || editingId.value;
+
+        // Eksekusi penghapusan foto dokumentasi yang telah ditandai (Batch Delete via PATCH /documentation)
+        if (deletedPhotoIds.value.length > 0) {
+            try {
+                await api.patch('/documentation', { ids: deletedPhotoIds.value });
+                deletedPhotoIds.value = [];
+            } catch (delErr) {
+                console.error("Gagal mengeksekusi batch delete dokumentasi via PATCH:", delErr);
+                // Fallback bila backend belum menyediakan endpoint batch PATCH
+                try {
+                    await Promise.allSettled(
+                        deletedPhotoIds.value.map(photoId => api.delete(`/documentation/${photoId}`))
+                    );
+                    deletedPhotoIds.value = [];
+                } catch (fallbackErr) {
+                    console.error("Fallback delete per-id juga gagal:", fallbackErr);
+                }
+            }
+        }
+
+        // Unggah file dokumentasi baru jika ada
+        if (newDokumentasiFiles.value.length > 0 && progressFisikIdResult) {
+            try {
+                const docFormData = new FormData();
+                docFormData.append('paketDocumentationId', targetId);
+                docFormData.append('progressFisikId', progressFisikIdResult);
+                docFormData.append('tglPengambilan', formProgress.value.tglLaporan || new Date().toISOString());
+
+                newDokumentasiFiles.value.forEach((file) => {
+                    docFormData.append('files', file);
+                });
+
+                await api.post('/documentation', docFormData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+
+                newDokumentasiFiles.value = [];
+                if (dokumentasiUploadRef.value?.clearStagedFiles) {
+                    dokumentasiUploadRef.value.clearStagedFiles();
+                }
+            } catch (docErr) {
+                console.error("Gagal mengunggah foto dokumentasi tambahan:", docErr);
+            }
+        }
 
         let statusKondisiPaket = props.paket.statusKondisi;
 
         if (isUpdate && lastProgressId.value !== editingId.value) {
             modalVisible.value = false;
-            emit("saved", response.data.data);
+            emit("saved", response?.data?.data || { id: progressFisikIdResult });
             return;
         }
 
@@ -299,7 +393,7 @@ const submitForm = async () => {
 
 
         modalVisible.value = false;
-        emit("saved", response.data.data);
+        emit("saved", response?.data?.data || { id: progressFisikIdResult });
     } catch (error) {
 
         console.error("Error submitting progress fisik:", error.response?.data || error.message);
@@ -480,6 +574,13 @@ const submitForm = async () => {
                                 <ImageUpload v-model="formProgress.fotoStreetMap" label="Street Map"
                                     :isEditMode="isEditMode" :existing-url="existingFotos.fotoStreetMap" />
                             </div>
+
+                            <!-- Upload Dokumentasi Per Progres Fisik -->
+                            <ProgressDokumentasiUpload 
+                                ref="dokumentasiUploadRef"
+                                :existing-photos="existingDokumentasis"
+                                @update:files="newDokumentasiFiles = $event"
+                                @remove-photo="handleStageDeletePhoto" />
                         </div>
 
                         <!-- ACTION BUTTONS -->

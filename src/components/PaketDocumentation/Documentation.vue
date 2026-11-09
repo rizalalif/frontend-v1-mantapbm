@@ -1,17 +1,16 @@
 <template>
     <Toast />
-    <DropzoneDokumentasi :paketId="paketId" @refresh="fetchDocumentations" @submit="showAlert" />
 
     <!-- State Loading -->
-    <div v-if="isLoading" class="text-center py-12 bg-slate-50 rounded-lg border border-slate-200 my-4">
+    <div v-if="isLoading" class="text-center py-16 bg-white rounded-2xl border border-slate-100 my-4 shadow-sm">
         <div class="flex flex-col items-center justify-center space-y-3">
             <div class="w-8 h-8 border-4 border-blue-950 border-t-transparent rounded-full animate-spin"></div>
-            <p class="text-slate-500 text-sm font-medium">Memuat data dokumentasi...</p>
+            <p class="text-slate-500 text-sm font-medium">Memuat data dokumentasi proyek...</p>
         </div>
     </div>
 
     <!-- State Error -->
-    <div v-else-if="isError" class="p-6 bg-red-50 border border-red-200 rounded-xl text-center my-4">
+    <div v-else-if="isError" class="p-6 bg-red-50 border border-red-200 rounded-2xl text-center my-4">
         <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-3">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -21,117 +20,123 @@
         <h4 class="text-slate-800 font-bold text-base mb-1">Gagal Memuat Dokumentasi</h4>
         <p class="text-sm text-slate-600 mb-4 max-w-md mx-auto">{{ errorMessage }}</p>
         <button @click="fetchDocumentations"
-            class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold transition-colors shadow-sm inline-flex items-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
+            class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-full text-xs font-bold transition-all shadow-sm inline-flex items-center gap-2 cursor-pointer">
             Coba Lagi
         </button>
     </div>
 
-    <!-- State Jika paketId Belum Ada / Null -->
-    <div v-else-if="!paketId" class="text-center py-12 bg-slate-50 rounded-lg border border-slate-200 my-4">
-        <p class="text-slate-500 text-sm">Menunggu data paket dari parent...</p>
-    </div>
-
     <!-- State Kosong -->
-    <div v-else-if="dokumentasiList.length === 0"
-        class="text-center py-12 bg-slate-50 rounded-lg border border-slate-200 my-4">
-        <svg class="w-12 h-12 text-slate-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div v-else-if="!dokumentasiList || dokumentasiList.length === 0"
+        class="text-center py-20 bg-white rounded-2xl border border-slate-100 my-4 shadow-sm">
+        <svg class="w-14 h-14 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                 d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
-        <p class="text-slate-500 text-sm">Belum ada dokumentasi untuk paket ini.</p>
+        <p class="text-slate-600 font-bold text-base">Belum Ada Dokumentasi Proyek</p>
+        <p class="text-slate-400 text-xs mt-1">Dokumentasi diunggah melalui formulir riwayat Progres Fisik mingguan.</p>
     </div>
 
-    <!-- Carousel Scrollable Horizontal -->
-    <div v-else class="flex flex-nowrap overflow-x-auto gap-4 pb-6 snap-x snap-mandatory custom-scrollbar-x my-4">
+    <!-- GALERI GRID SETINGGI SISA LAYAR DENGAN DYNAMIC SCROLL FADE -->
+    <div v-else
+        class="relative w-full h-[calc(100vh-230px)] min-h-[460px]  rounded-3xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden my-4">
 
-        <div v-for="item in dokumentasiList" :key="item?.id || item?.fileName"
-            class="flex-none w-64 md:w-72 bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer group snap-center"
-            @click="bukaModal(item)">
-            <!-- Area Media -->
-            <div class="h-40 bg-slate-100 relative overflow-hidden">
+        <!-- FADE OVERLAY ATAS (Aktif jika sudah di-scroll ke bawah) -->
+        <div class="pointer-events-none absolute top-0 inset-x-0 h-16 bg-gradient-to-b from-white via-white/80 to-transparent z-10 transition-opacity duration-300"
+            :class="canScrollTop ? 'opacity-100' : 'opacity-0'"></div>
 
-                <!-- Jika Gambar -->
-                <img v-if="item?.fileType === 'image'" :src="getMediaUrl(item?.fileName)"
-                    :alt="item?.fileName || 'Dokumentasi'"
-                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    @error="handleImageError" />
+        <!-- CONTAINER SCROLLABLE VERTIKAL -->
+        <div ref="scrollContainerRef" @scroll="checkScroll"
+            class="w-full h-full overflow-y-auto custom-scrollbar-y pr-2 pt-2 pb-14">
+            <!-- Grid Foto Responsif Multi-Kolom -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                <div v-for="item in dokumentasiList" :key="item?.id || item?.fileName"
+                    class="group relative aspect-square bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 shadow-xs hover:shadow-lg transition-all duration-300 cursor-pointer"
+                    @click="bukaModal(item)">
+                    <!-- Media Gambar -->
+                    <img v-if="item?.fileType === 'image' || !item?.fileType" :src="getMediaUrl(item?.fileName)"
+                        :alt="item?.fileName || 'Dokumentasi'"
+                        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        @error="handleImageError" />
 
-                <!-- Jika Video -->
-                <div v-else-if="item?.fileType === 'video'" class="w-full h-full relative">
-                    <video :src="getMediaUrl(item?.fileUrl || item?.fileName)" class="w-full h-full object-cover"
-                        preload="metadata"></video>
-                    <div class="absolute inset-0 bg-black/30 flex items-center justify-center">
-                        <div class="bg-white/90 rounded-full p-3 shadow-lg">
-                            <svg class="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
-                                    clip-rule="evenodd"></path>
-                            </svg>
+                    <!-- Media Video -->
+                    <div v-else-if="item?.fileType === 'video'" class="w-full h-full relative">
+                        <video :src="getMediaUrl(item?.fileUrl || item?.fileName)" class="w-full h-full object-cover"
+                            preload="metadata"></video>
+                        <div class="absolute inset-0 bg-black/30 flex items-center justify-center">
+                            <div class="bg-white/90 rounded-full p-2.5 shadow-md">
+                                <svg class="w-6 h-6 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Overlay Gradient Info Bawah -->
+                    <div
+                        class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2.5 text-white opacity-90 group-hover:opacity-100 transition-opacity">
+                        <p v-if="'monthNumber', 'mingguKe' in item.progressFisik"
+                            class="text-[10px] font-bold truncate">
+                            {{ `B${item?.progressFisik.monthNumber} / M${item?.progressFisik.mingguKe}` }}
+                            <!-- {{ formatTanggal(item?.date || item?.tglPengambilan || item?.createdAt) }} -->
+                        </p>
+                    </div>
+
+                    <!-- Hover Icon Zoom -->
+                    <div
+                        class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                        <span class="p-2 bg-white/90 rounded-full shadow-md text-blue-950">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                            </svg>
+                        </span>
+                    </div>
                 </div>
-
-                <!-- Fallback jika fileType tidak diketahui -->
-                <div v-else class="w-full h-full flex items-center justify-center bg-slate-100 text-slate-400">
-                    <span class="text-xs">Media tidak didukung</span>
-                </div>
-
-            </div>
-
-            <!-- Footer Info -->
-            <div class="p-3">
-                <p class="text-xs font-bold text-slate-800 truncate mb-1">{{ item?.keterangan || item?.location ||
-                    'Tanpa STA' }}</p>
-                <p class="text-[11px] text-slate-500">{{ formatTanggal(item?.date || item?.createdAt) }}</p>
             </div>
         </div>
 
-        <!-- Lightbox Modal -->
-        <Transition name="fade">
-            <div v-if="isModalOpen"
-                class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 lg:p-10"
-                @click.self="tutupModal">
+        <!-- FADE OVERLAY BAWAH (Aktif jika masih bisa scroll ke bawah) -->
+        <div class="pointer-events-none absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-white via-white/80 to-transparent z-10 transition-opacity duration-300"
+            :class="canScrollBottom ? 'opacity-100' : 'opacity-0'"></div>
+    </div>
 
-                <!-- Tombol Tutup Silang di Kanan Atas -->
-                <button @click="tutupModal"
-                    class="absolute top-6 right-6 text-white/70 hover:text-white bg-black/50 p-2 rounded-full z-10">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
-                        </path>
-                    </svg>
-                </button>
+    <!-- LIGHTBOX MODAL PREVIEW -->
+    <Transition name="fade">
+        <div v-if="isModalOpen" class="fixed inset-0 z-[150] flex items-center justify-center bg-black/90 p-4 lg:p-10"
+            @click.self="tutupModal">
 
-                <!-- Container Media Modal -->
-                <div class="relative max-w-5xl w-full max-h-full flex flex-col items-center">
+            <button @click="tutupModal"
+                class="absolute top-6 right-6 text-white/80 hover:text-white bg-black/50 p-2.5 rounded-full z-10 transition-colors cursor-pointer">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
 
-                    <img v-if="selectedItem?.fileType === 'image'" :src="getMediaUrl(selectedItem?.fileName)"
-                        class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
-                        @error="handleImageError" />
+            <div class="relative max-w-5xl w-full max-h-full flex flex-col items-center">
+                <img v-if="selectedItem?.fileType === 'image' || !selectedItem?.fileType"
+                    :src="getMediaUrl(selectedItem?.fileName)"
+                    class="max-w-full max-h-[82vh] object-contain rounded-xl shadow-2xl" @error="handleImageError" />
 
-                    <video v-else-if="selectedItem?.fileType === 'video'" :src="getMediaUrl(selectedItem?.fileName)"
-                        controls autoplay class="max-w-full max-h-[85vh] rounded-lg shadow-2xl"></video>
+                <video v-else-if="selectedItem?.fileType === 'video'" :src="getMediaUrl(selectedItem?.fileName)"
+                    controls autoplay class="max-w-full max-h-[82vh] rounded-xl shadow-2xl"></video>
 
-                    <!-- Teks Keterangan di Bawah Modal -->
-                    <div class="mt-4 text-white text-center">
-                        <h3 class="text-lg font-bold">{{ selectedItem?.location || selectedItem?.keterangan ||
-                            'Lokasi_tidak_diketahui' }}</h3>
-                        <p class="text-sm text-slate-300">{{ selectedItem ? formatTanggal(selectedItem.date ||
-                            selectedItem.createdAt) : '' }}</p>
-                    </div>
-
+                <div class="mt-3 text-white text-center">
+                    <p class="text-xs text-slate-300">
+                        {{ selectedItem ? `B${selectedItem?.progressFisik["monthNumber"]} /
+                        M${selectedItem?.progressFisik["mingguKe"]}`
+                            : ''
+                        }}
+                    </p>
                 </div>
             </div>
-        </Transition>
-    </div>
+        </div>
+    </Transition>
 </template>
 
 <script setup>
-import { onMounted, ref, watch } from 'vue';
-import DropzoneDokumentasi from './DropzoneDokumentasi.vue';
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import api, { BASE_URL } from '@/services/api';
 import { useAuth } from '@/lib/Auth.js';
 import { Toast, useToast } from 'primevue';
@@ -145,40 +150,53 @@ const props = defineProps({
 });
 
 const auth = useAuth();
-const toast = useToast()
-// State Handling
+const toast = useToast();
+
 const isLoading = ref(false);
 const isError = ref(false);
 const errorMessage = ref('');
 const dokumentasiList = ref([]);
+
+// State Scroll & Dynamic Fade
+const scrollContainerRef = ref(null);
+const canScrollTop = ref(false);
+const canScrollBottom = ref(false);
 
 // State Modal Lightbox
 const isModalOpen = ref(false);
 const selectedItem = ref(null);
 const backendUrl = ref(`${BASE_URL}/images/`);
 
-const showAlert = (severity, status, message) => {
+// Cek posisi scroll untuk menentukan aktivasi fade atas dan bawah
+const checkScroll = () => {
+    const el = scrollContainerRef.value;
+    if (!el) {
+        canScrollTop.value = false;
+        canScrollBottom.value = false;
+        return;
+    }
+    const { scrollTop, scrollHeight, clientHeight } = el;
 
-    toast.add({
-        severity: severity,
-        summary: status,
-        detail: message,
-        group: 'top-center',
-        life: 2000
-    });
+    // Jika konten tidak melebihi tinggi container, kedua fade tidak aktif
+    if (scrollHeight <= clientHeight) {
+        canScrollTop.value = false;
+        canScrollBottom.value = false;
+        return;
+    }
 
+    // Toleransi 5px untuk presisi browser
+    canScrollTop.value = scrollTop > 5;
+    canScrollBottom.value = scrollTop + clientHeight < scrollHeight - 5;
 };
 
 const getMediaUrl = (fileName) => {
     if (!fileName) return '';
-    if (fileName.startsWith('http://') || fileName.startsWith('https://')) {
-        return fileName;
-    }
+    if (fileName.startsWith('http://') || fileName.startsWith('https://')) return fileName;
     return `${backendUrl.value}${fileName}`;
 };
 
 const handleImageError = (e) => {
-    e.target.src = 'https://via.placeholder.com/400x300?text=Gambar+Gagal+Dimuat';
+    e.target.src = 'https://via.placeholder.com/400x400?text=Foto+Gagal+Dimuat';
 };
 
 const formatTanggal = (tanggal) => {
@@ -186,8 +204,7 @@ const formatTanggal = (tanggal) => {
     try {
         const d = new Date(tanggal);
         if (isNaN(d.getTime())) return '-';
-        const options = { year: 'numeric', month: 'long', day: 'numeric' };
-        return d.toLocaleDateString('id-ID', options);
+        return d.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
     } catch {
         return '-';
     }
@@ -204,7 +221,6 @@ const fetchDocumentations = async () => {
     errorMessage.value = '';
 
     try {
-        const token = auth.state?.token || localStorage.getItem('token');
         const response = await api.get(`/documentation/${props.paketId}`);
 
         if (response.data && Array.isArray(response.data.data)) {
@@ -214,6 +230,10 @@ const fetchDocumentations = async () => {
         } else {
             dokumentasiList.value = [];
         }
+
+        // Hitung ulang status scroll setelah DOM ter-render
+        await nextTick();
+        checkScroll();
     } catch (err) {
         console.error("Error fetching documentation:", err);
         isError.value = true;
@@ -248,11 +268,19 @@ onMounted(() => {
     if (props.paketId) {
         fetchDocumentations();
     }
+    window.addEventListener('resize', checkScroll);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('resize', checkScroll);
+});
+
+defineExpose({
+    fetchDocumentations
 });
 </script>
 
 <style scoped>
-/* Transisi untuk Modal Lightbox */
 .fade-enter-active,
 .fade-leave-active {
     transition: opacity 0.3s ease;
@@ -263,21 +291,21 @@ onMounted(() => {
     opacity: 0;
 }
 
-/* Kustomisasi Scrollbar Horizontal */
-.custom-scrollbar-x::-webkit-scrollbar {
-    height: 8px;
+/* Custom Scrollbar Vertikal */
+.custom-scrollbar-y::-webkit-scrollbar {
+    width: 6px;
 }
 
-.custom-scrollbar-x::-webkit-scrollbar-track {
+.custom-scrollbar-y::-webkit-scrollbar-track {
     background: transparent;
 }
 
-.custom-scrollbar-x::-webkit-scrollbar-thumb {
+.custom-scrollbar-y::-webkit-scrollbar-thumb {
     background-color: #cbd5e1;
-    border-radius: 10px;
+    border-radius: 9999px;
 }
 
-.custom-scrollbar-x::-webkit-scrollbar-thumb:hover {
+.custom-scrollbar-y::-webkit-scrollbar-thumb:hover {
     background-color: #94a3b8;
 }
 </style>
