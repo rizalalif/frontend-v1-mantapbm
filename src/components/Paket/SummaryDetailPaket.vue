@@ -34,25 +34,26 @@
     </div>
 
     <!-- Content Utama (Ref ditargetkan khusus untuk export PDF) -->
-    <div v-else 
-        ref="summaryPdfRef" 
-        id="printable-summary-content" 
+    <div v-else ref="summaryPdfRef" id="printable-summary-content"
         class="min-h-screen p-6 md:p-8 font-sans text-slate-800">
 
         <!-- ========================================== -->
         <!-- JUDUL DI PALING ATAS DOKUMEN PDF           -->
         <!-- (Hidden di Web, Hanya Muncul di Hasil PDF) -->
         <!-- ========================================== -->
-        <div id="pdf-header-title" style="display: none;" class="mb-6 text-center border-b-2 border-blue-950 pb-4 bg-white/90 rounded-xl p-4 shadow-xs">
+        <div id="pdf-header-title" style="display: none;"
+            class="mb-6 text-center border-b-2 border-blue-950 pb-4 bg-white/90 rounded-xl p-4 shadow-xs">
             <h1 class="text-2xl font-black text-blue-950 uppercase tracking-tight">
-                Paket {{ detailPaket?.name || paket?.name || detailPaket?.nama_paket || paket?.nama_paket || 'Pekerjaan' }}
+                Paket {{ detailPaket?.name || paket?.name || detailPaket?.nama_paket || paket?.nama_paket || 'Pekerjaan'
+                }}
             </h1>
-            <div v-if="detailPaket?.noKontrak || paket?.noKontrak || detailPaket?.kodePaket || paket?.kodePaket" 
+            <div v-if="detailPaket?.noKontrak || paket?.noKontrak || detailPaket?.kodePaket || paket?.kodePaket"
                 class="flex items-center justify-center gap-3 text-xs font-bold text-slate-600 mt-2">
                 <span v-if="detailPaket?.kodePaket || paket?.kodePaket">
                     Kode RUP / Paket: {{ detailPaket?.kodePaket || paket?.kodePaket }}
                 </span>
-                <span v-if="(detailPaket?.kodePaket || paket?.kodePaket) && (detailPaket?.noKontrak || paket?.noKontrak)">•</span>
+                <span
+                    v-if="(detailPaket?.kodePaket || paket?.kodePaket) && (detailPaket?.noKontrak || paket?.noKontrak)">•</span>
                 <span v-if="detailPaket?.noKontrak || paket?.noKontrak">
                     No. Kontrak: {{ detailPaket?.noKontrak || paket?.noKontrak }}
                 </span>
@@ -75,17 +76,20 @@
 
             <!-- Tombol Action Download PDF (Abaikan saat html2canvas capture) -->
             <div class="flex items-center gap-3" data-html2canvas-ignore="true">
-                <button type="button" 
-                    @click="downloadPdf" 
-                    :disabled="isGeneratingPdf"
+                <button type="button" @click="downloadPdf" :disabled="isGeneratingPdf"
                     class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-950 hover:bg-blue-900 text-white text-xs font-bold rounded-xl shadow-sm transition-all hover:shadow-md cursor-pointer group active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed">
                     <!-- Icon Spinner saat loading -->
-                    <svg v-if="isGeneratingPdf" class="animate-spin -ml-1 mr-1 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg v-if="isGeneratingPdf" class="animate-spin -ml-1 mr-1 h-4 w-4 text-white" fill="none"
+                        viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
                     </svg>
                     <!-- Icon Download saat normal -->
-                    <svg v-else class="w-4 h-4 text-orange-400 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg v-else class="w-4 h-4 text-orange-400 group-hover:scale-110 transition-transform" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
@@ -113,14 +117,76 @@
                 </div>
             </div>
 
-            <!-- Peta -->
-            <div class="xl:col-span-5 bg-white rounded-xl shadow-sm border border-slate-200/60 p-5 flex flex-col">
-                <h2 class="text-base font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Peta</h2>
-                <div class="flex-1 bg-slate-200 rounded-lg overflow-hidden relative min-h-[250px]">
-                    <div id="map"
-                        class="flex-1 rounded border border-gray-200 overflow-hidden relative w-full h-full z-0">
+            <!-- Kolom Kanan: Peta (Atas) & Riwayat Adendum (Bawah) -->
+            <div class="xl:col-span-5 flex flex-col gap-6">
+
+                <!-- 1. Card Peta (Atas) -->
+                <div
+                    class="bg-white rounded-xl shadow-sm border border-slate-200/60 p-5 flex flex-col flex-1 min-h-[220px]">
+                    <h2 class="text-base font-bold text-slate-800 mb-3 border-b border-slate-100 pb-2">Peta</h2>
+                    <div class="flex-1 bg-slate-200 rounded-lg overflow-hidden relative min-h-[160px]">
+                        <div id="map"
+                            class="flex-1 rounded border border-gray-200 overflow-hidden relative w-full h-full z-0">
+                        </div>
                     </div>
                 </div>
+
+                <!-- 2. Card Riwayat Adendum (Bawah) -->
+                <div
+                    class="bg-white rounded-xl shadow-sm border border-slate-200/60 p-5 flex flex-col flex-1 min-h-[190px]">
+                    <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
+                        <h2 class="text-base font-bold text-slate-800">Riwayat Adendum</h2>
+                        <span v-if="listAdendum.length > 0"
+                            class="text-[11px] font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                            {{ listAdendum.length }} Adendum
+                        </span>
+                    </div>
+
+                    <div id="card-adendum-table-container"
+                        class="flex-1 overflow-x-auto overflow-y-auto max-h-[160px] custom-scrollbar-y">
+                        <div v-if="!listAdendum || listAdendum.length === 0"
+                            class="flex flex-col items-center justify-center h-full text-slate-400">
+                            <svg class="w-8 h-8 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                </path>
+                            </svg>
+                            <span class="text-xs italic">Belum ada riwayat adendum.</span>
+                        </div>
+
+                        <table v-else class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr
+                                    class="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 bg-slate-50/50 sticky top-0 z-10">
+                                    <th class="px-3 py-2 text-center w-10 rounded-l-md">No</th>
+                                    <th class="px-3 py-2 text-left">No. Adendum</th>
+                                    <th class="px-3 py-2 text-center whitespace-nowrap">Tgl Adendum</th>
+                                    <th class="px-3 py-2 text-right rounded-r-md whitespace-nowrap">Nilai Adendum</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-slate-700">
+                                <!-- Empty State jika belum ada riwayat adendum -->
+                                <!-- Data Rows -->
+                                <tr v-for="(item, index) in listAdendum" :key="item.id || index"
+                                    class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="px-3 py-2 text-center font-bold text-slate-400">
+                                        {{ index + 1 }}
+                                    </td>
+                                    <td class="px-3 py-2 text-left font-semibold text-slate-800">
+                                        {{ item.noAdendum || item.nomorAdendum || '-' }}
+                                    </td>
+                                    <td class="px-3 py-2 text-center font-semibold text-slate-600 whitespace-nowrap">
+                                        {{ formatDateShort(item.tglAdendum || item.tanggalAdendum) }}
+                                    </td>
+                                    <td class="px-3 py-2 text-right font-semibold text-blue-950 whitespace-nowrap">
+                                        {{ formatRupiah(item.nilaiAdendum) }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -175,7 +241,7 @@
                             <div class="flex justify-between text-xs mb-1">
                                 <span class="text-slate-500 font-medium">Target Rencana</span>
                                 <span class="font-bold text-slate-700">{{ statusProgressFisik.planPercentage.toFixed(2)
-                                    }}%</span>
+                                }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
                                 <div class="bg-blue-400 h-2 rounded-full max-w-full"
@@ -190,7 +256,7 @@
                                 <span class="text-slate-500 font-medium">Realisasi Aktual</span>
                                 <span class="font-bold text-emerald-600">{{
                                     statusProgressFisik.actualPercentage.toFixed(2)
-                                    }}%</span>
+                                }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
                                 <div class="h-2 rounded-full transition-all max-w-full"
@@ -224,7 +290,7 @@
                                 <span class="text-slate-500 font-medium">Terhadap Pagu</span>
                                 <span class="font-bold text-slate-700">{{
                                     statusProgressKeuangan.planPercentage.toFixed(2)
-                                    }}%</span>
+                                }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
                                 <div class="bg-blue-400 h-2 rounded-full max-w-full"
@@ -239,7 +305,7 @@
                                 <span class="text-slate-500 font-medium">Terhadap Kontrak</span>
                                 <span class="font-bold text-emerald-600">{{
                                     statusProgressKeuangan.actualPercentage.toFixed(2)
-                                    }}%</span>
+                                }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2">
                                 <div class="h-2 rounded-full transition-all max-w-full"
@@ -319,18 +385,18 @@
                         {{ latestDocumentations.length }} foto terbaru
                     </span>
                 </div>
-                
+
                 <div class="p-3 flex-1 overflow-hidden relative">
                     <!-- Kondisi 1: Jika data dokumentasi tersedia -->
-                    <div v-if="latestDocumentations.length > 0" class="grid grid-cols-2 grid-rows-2 gap-2 w-full h-full">
+                    <div v-if="latestDocumentations.length > 0"
+                        class="grid grid-cols-2 grid-rows-2 gap-2 w-full h-full">
                         <div v-for="(item, index) in latestDocumentations" :key="item?.id || index"
                             class="relative w-full h-full rounded-lg overflow-hidden bg-slate-100 border border-slate-100 group cursor-pointer shadow-xs hover:shadow-md transition-all duration-300"
                             @click="bukaModalDokumentasi(item)">
-                            
+
                             <!-- Format Gambar -->
                             <img v-if="item?.fileType === 'image' || !item?.fileType"
-                                :src="getDocMediaUrl(item?.fileName)"
-                                :alt="item?.fileName || 'Dokumentasi'"
+                                :src="getDocMediaUrl(item?.fileName)" :alt="item?.fileName || 'Dokumentasi'"
                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                 @error="handleImageError" />
 
@@ -350,7 +416,8 @@
                             </div>
 
                             <!-- Hover Overlay Icon Zoom -->
-                            <div class="absolute inset-0 bg-blue-950/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                            <div
+                                class="absolute inset-0 bg-blue-950/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                                 <div class="bg-white/90 rounded-full p-2 shadow-md text-blue-950">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -403,7 +470,7 @@
                                 <tr>
                                     <td class="border px-2 py-1px-2 py-1  border-gray-300">{{
                                         kendalaLastProgress.keterangan
-                                        }}</td>
+                                    }}</td>
                                     <td
                                         class="border px-2 py-1px-2 py-1 break-words whitespace-normal   border-gray-300">
                                         {{ kendalaLastProgress.tindakLanjut }}</td>
@@ -463,15 +530,15 @@
 
     <!-- Lightbox Modal Preview (Sesuai Documentation.vue:L94-L128) -->
     <Transition name="fade">
-        <div v-if="isModalOpen"
-            class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 lg:p-10"
+        <div v-if="isModalOpen" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 lg:p-10"
             @click.self="tutupModalDokumentasi">
 
             <!-- Tombol Tutup Silang di Kanan Atas -->
             <button @click="tutupModalDokumentasi"
                 class="absolute top-6 right-6 text-white/70 hover:text-white bg-black/50 hover:bg-black/70 p-2.5 rounded-full z-10 transition-colors cursor-pointer">
                 <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
                 </svg>
             </button>
 
@@ -479,12 +546,11 @@
             <div class="relative max-w-5xl w-full max-h-full flex flex-col items-center">
                 <img v-if="selectedDocItem?.fileType === 'image' || !selectedDocItem?.fileType"
                     :src="getDocMediaUrl(selectedDocItem?.fileName)"
-                    class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
-                    @error="handleImageError" />
+                    class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl" @error="handleImageError" />
 
                 <video v-else-if="selectedDocItem?.fileType === 'video'"
-                    :src="getDocMediaUrl(selectedDocItem?.fileUrl || selectedDocItem?.fileName)"
-                    controls autoplay class="max-w-full max-h-[85vh] rounded-lg shadow-2xl"></video>
+                    :src="getDocMediaUrl(selectedDocItem?.fileUrl || selectedDocItem?.fileName)" controls autoplay
+                    class="max-w-full max-h-[85vh] rounded-lg shadow-2xl"></video>
             </div>
         </div>
     </Transition>
@@ -651,6 +717,12 @@ const downloadPdf = async () => {
                         max-width: 100% !important;
                         max-height: 100% !important;
                         overflow: hidden !important;
+                    }
+
+                    /* Pastikan tabel riwayat adendum tampil penuh tanpa scrollbar di PDF */
+                    #card-adendum-table-container {
+                        max-height: none !important;
+                        overflow: visible !important;
                     }
                 `;
                 clonedDoc.head.appendChild(styleTag);
@@ -1088,7 +1160,7 @@ const formatRupiah = (angka) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(angka || 0);
 };
 
-// 1.1 Format Tanggal Indonesia
+// 1.1 Format Tanggal Indonesia (Long Format: dd MMMM yyyy)
 const formatDate = (dateString) => {
     if (!dateString) return '-';
     try {
@@ -1103,6 +1175,31 @@ const formatDate = (dateString) => {
         return dateString;
     }
 };
+
+// 1.1.1 Format Tanggal Singkat (dd/mm/yyyy)
+const formatDateShort = (dateString) => {
+    if (!dateString) return '-';
+    try {
+        const d = new Date(dateString);
+        if (isNaN(d.getTime())) return dateString;
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+    } catch {
+        return dateString;
+    }
+};
+
+// 1.2 Data Riwayat Adendum untuk Card di Bawah Peta
+const listAdendum = computed(() => {
+    const raw = detailPaket.value?.riwayatAdendums
+        || props.paket?.riwayatAdendums
+        || detailPaket.value?.adendums
+        || props.paket?.adendums
+        || [];
+    return Array.isArray(raw) ? raw : [];
+});
 
 // 2. Olah Data Teknis untuk Looping di Tabel Info
 const dataTeknisFormat = computed(() => {
