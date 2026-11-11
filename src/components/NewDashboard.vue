@@ -379,12 +379,25 @@ const fetchDashboardData = async () => {
 
             const status = paket.statusKondisi ?? '-';
 
-            if (paket.progressFisiks.length > 0) {
-                keterangan = paket.progressFisiks[0].keterangan ?? '-';
-                tglLaporan = paket.progressFisiks[0].tglLaporan ?? '-';
+            if (Array.isArray(paket.progressFisiks) && paket.progressFisiks.length > 0) {
+                const sorted = [...paket.progressFisiks].sort((a, b) => {
+                    const ma = Number(a?.monthNumber) || 0;
+                    const mb = Number(b?.monthNumber) || 0;
+                    if (ma !== mb) return mb - ma;
+                    const wa = Number(a?.mingguKe) || 0;
+                    const wb = Number(b?.mingguKe) || 0;
+                    if (wa !== wb) return wb - wa;
+                    const da = a?.tglLaporan ? new Date(a.tglLaporan).getTime() : 0;
+                    const db = b?.tglLaporan ? new Date(b.tglLaporan).getTime() : 0;
+                    return db - da;
+                });
+                keterangan = sorted[0].keterangan ?? '-';
+                tglLaporan = sorted[0].tglLaporan ? new Date(sorted[0].tglLaporan).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : '-';
+            } else {
+                tglLaporan = '-';
             }
 
-            return { name: paket.name, kodePaket: paket.kodePaket, keterangan, tglLaporan: new Date(tglLaporan).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }), status }
+            return { name: paket.name, kodePaket: paket.kodePaket, keterangan, tglLaporan, status }
 
         });
 

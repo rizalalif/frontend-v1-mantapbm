@@ -577,6 +577,10 @@ const props = defineProps({
         type: Object,
         required: false,
         default: () => ({})
+    },
+    isActive: {
+        type: Boolean,
+        default: true
     }
 });
 
@@ -1028,31 +1032,37 @@ const fetchDetailPaket = async () => {
 const setDataPaket = () => {
     if (!detailPaket.value) return;
 
+    // Nilai kontrak aktif (mengutamakan adendum)
+    const kontrakAktif = Number(detailPaket.value.nilaiKontrakAdendum ?? detailPaket.value.nilaiKontrakTerkini ?? detailPaket.value.nilaiKontrak) || 0;
+
     // Handle physical progress data
-    const progressFisikData = detailPaket.value.progressFisiks || [];
+    const rawProgressFisik = detailPaket.value.progressFisiks || detailPaket.value.progressFisik || [];
+    const progressFisikData = [...rawProgressFisik].sort((a, b) => {
+        const ma = Number(a?.monthNumber) || 0;
+        const mb = Number(b?.monthNumber) || 0;
+        if (ma !== mb) return ma - mb;
+        const wa = Number(a?.mingguKe) || 0;
+        const wb = Number(b?.mingguKe) || 0;
+        if (wa !== wb) return wa - wb;
+        const da = a?.tglLaporan ? new Date(a.tglLaporan).getTime() : 0;
+        const db = b?.tglLaporan ? new Date(b.tglLaporan).getTime() : 0;
+        return da - db;
+    });
+
     if (progressFisikData.length > 0) {
         const lastStatus = progressFisikData[progressFisikData.length - 1];
-        // statusProgressFisik.value.actualPercentage = lastStatus.actualPercentage || 0;
-        // statusProgressFisik.value.planPercentage = lastStatus.planPercentage || 0;
-        // statusProgressFisik.value.deviationFisik = lastStatus.deviationFisik || 0;
 
         let totalActualNominalFisik = 0;
         let totalPlanPercentageFisik = 0;
-        let totalActualPercentageFisik = 0;
 
         progressFisikData.forEach(progress => {
             if (progress) {
                 totalActualNominalFisik += Number(progress.actualNominal) || 0;
                 totalPlanPercentageFisik += Number(progress.planPercentage) || 0;
-                totalActualPercentageFisik += Number(progress.actualPercentage) || 0;
             }
-        })
+        });
 
-        let actualPercentage = (totalActualNominalFisik / detailPaket.value.nilaiKontrak) * 100
-
-        if (detailPaket.value.nilaiKontrakAdendum !== null && detailPaket.value.nilaiKontrakAdendum !== undefined) {
-            actualPercentage = (totalActualNominalFisik / detailPaket.value.nilaiKontrakAdendum) * 100
-        }
+        let actualPercentage = kontrakAktif > 0 ? (totalActualNominalFisik / kontrakAktif) * 100 : 0;
 
         statusProgressFisik.value = {
             actualNominal: totalActualNominalFisik,
@@ -1061,18 +1071,11 @@ const setDataPaket = () => {
             deviationFisik: actualPercentage - totalPlanPercentageFisik,
         };
 
-
-
-
         fotoLastProgress.value.fotoTipikal = lastStatus.fotoTipikal || '';
         fotoLastProgress.value.fotoStreetMap = lastStatus.fotoStreetMap || '';
         fotoLastProgress.value.fotoDokumentasi = lastStatus.fotoDokumentasi || '';
         kendalaLastProgress.value.keterangan = lastStatus.keterangan || '';
         kendalaLastProgress.value.tindakLanjut = lastStatus.tindakLanjut || '';
-
-
-
-
     } else {
         statusProgressFisik.value.actualPercentage = 0;
         statusProgressFisik.value.planPercentage = 0;
@@ -1085,40 +1088,48 @@ const setDataPaket = () => {
     }
 
     // Handle financial progress data
-    const progressKeuanganData = detailPaket.value.progressKeuangans || detailPaket.value.progressKeuangan || [];
+    const rawProgressKeuangan = detailPaket.value.progressKeuangans || detailPaket.value.progressKeuangan || [];
+    const progressKeuanganData = [...rawProgressKeuangan].sort((a, b) => {
+        const ma = Number(a?.monthNumber) || 0;
+        const mb = Number(b?.monthNumber) || 0;
+        if (ma !== mb) return ma - mb;
+        const wa = Number(a?.mingguKe) || 0;
+        const wb = Number(b?.mingguKe) || 0;
+        if (wa !== wb) return wa - wb;
+        const da = a?.tglLaporan ? new Date(a.tglLaporan).getTime() : 0;
+        const db = b?.tglLaporan ? new Date(b.tglLaporan).getTime() : 0;
+        return da - db;
+    });
+
     if (progressKeuanganData.length > 0) {
         const lastStatus = progressKeuanganData[progressKeuanganData.length - 1];
         let totalActualNominalKeuangan = 0;
-        let totalPlanPercentageKeuangan = 0;
         let totalActualPercentageKeuangan = 0;
 
         progressKeuanganData.forEach(progress => {
             if (progress) {
                 totalActualNominalKeuangan += Number(progress.actualFinance) || 0;
-                totalPlanPercentageKeuangan += Number(progress.paguPercentage) || 0;
                 totalActualPercentageKeuangan += Number(progress.actualPercentage) || 0;
             }
-        })
+        });
 
-        let actualPercentage = (totalActualNominalKeuangan / detailPaket.value.nilaiKontrak) * 100
-        if (detailPaket.value.nilaiKontrakAdendum !== null && detailPaket.value.nilaiKontrakAdendum !== undefined) {
-            actualPercentage = (totalActualNominalKeuangan / detailPaket.value.nilaiKontrakAdendum) * 100
-        }
+        let actualPercentage = kontrakAktif > 0 ? (totalActualNominalKeuangan / kontrakAktif) * 100 : 0;
+        const nilaiPagu = Number(detailPaket.value.nilaiPagu) || 0;
+        const planPercentagePagu = nilaiPagu > 0 ? (totalActualNominalKeuangan / nilaiPagu) * 100 : 0;
 
         statusProgressKeuangan.value = {
             actualNominal: totalActualNominalKeuangan,
-            planPercentage: totalPlanPercentageKeuangan,
+            planPercentage: planPercentagePagu,
             actualPercentage: actualPercentage,
-            deviationFinance: actualPercentage - totalPlanPercentageKeuangan,
+            deviationFinance: actualPercentage - planPercentagePagu,
         };
-
-
     } else {
         statusProgressKeuangan.value.actualPercentage = 0;
         statusProgressKeuangan.value.planPercentage = 0;
         statusProgressKeuangan.value.deviationFinance = 0;
+        statusProgressKeuangan.value.actualNominal = 0;
     }
-}
+};
 // Mengambil maksimal 4 data dokumentasi terakhir
 const latestDocumentations = computed(() => {
     const rawDocs = detailPaket.value?.documentations || props.paket?.documentations || [];
@@ -1144,6 +1155,25 @@ watch(() => detailPaket.value, () => {
         loadMap()
     }
 }, { immediate: true })
+
+// Solusi 2: Sinkronisasi dan fetch ulang saat Tab Dashboard aktif atau saat props.paket diperbarui
+watch(
+    () => [props.isActive, props.paket],
+    async ([active, newPaket]) => {
+        if (!active) return;
+
+        // Jika parent sudah memiliki objek paket lengkap, gunakan langsung untuk update reaktif instan
+        if (newPaket && (newPaket.id || newPaket.kodePaket)) {
+            detailPaket.value = newPaket;
+            loadKurvaUang();
+        } else if (paketId.value || props.paketId) {
+            // Jika belum ada di parent atau memerlukan data terbaru, panggil fetchDetailPaket
+            await fetchDetailPaket();
+            loadKurvaUang();
+        }
+    },
+    { deep: true, immediate: true }
+);
 
 onMounted(async () => {
     await fetchDetailPaket();

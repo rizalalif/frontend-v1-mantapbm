@@ -7,7 +7,7 @@
                     Foto Dokumentasi Lapangan
                 </label>
                 <p class="text-[11px] text-slate-400">
-                    Tarik & lepas foto langsung ke kotak bergaris, atau klik untuk memilih file.
+                    {{ readonly ? 'Klik ikon kaca pembesar pada foto untuk melihat ukuran penuh.' : 'Tarik & lepas foto langsung ke kotak bergaris, atau klik untuk memilih file.' }}
                 </p>
             </div>
 
@@ -57,7 +57,7 @@
                                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
                         </svg>
                     </button>
-                    <button type="button" @click.stop="handleRemoveExisting(doc?.id)" title="Hapus Foto"
+                    <button v-if="!readonly" type="button" @click.stop="handleRemoveExisting(doc?.id)" title="Hapus Foto"
                         class="p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-sm transition-all hover:scale-110 cursor-pointer">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -68,65 +68,73 @@
             </div>
 
             <!-- 2. FOTO BARU YANG SEDANG DI-DROP / DIPILIH (STAGED) -->
-            <div v-for="(fileObj, index) in stagedFiles" :key="'staged-' + index"
-                class="relative flex-none w-32 h-32 rounded-xl overflow-hidden border-2 border-orange-400 bg-white group shadow-xs">
+            <template v-if="!readonly">
+                <div v-for="(fileObj, index) in stagedFiles" :key="'staged-' + index"
+                    class="relative flex-none w-32 h-32 rounded-xl overflow-hidden border-2 border-orange-400 bg-white group shadow-xs">
 
-                <!-- Badge Penanda 'Baru' -->
-                <span
-                    class="absolute top-1.5 left-1.5 bg-orange-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-xs z-10 uppercase tracking-wider">
-                    Baru
-                </span>
+                    <!-- Badge Penanda 'Baru' -->
+                    <span
+                        class="absolute top-1.5 left-1.5 bg-orange-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-xs z-10 uppercase tracking-wider">
+                        Baru
+                    </span>
 
-                <!-- Tombol Hapus File Staged -->
-                <button type="button" @click.stop="removeStagedFile(index)" title="Batalkan foto ini"
-                    class="absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-90 hover:opacity-100 z-10 cursor-pointer transition-transform hover:scale-110 shadow-sm">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                            d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
+                    <!-- Tombol Hapus File Staged -->
+                    <button type="button" @click.stop="removeStagedFile(index)" title="Batalkan foto ini"
+                        class="absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-90 hover:opacity-100 z-10 cursor-pointer transition-transform hover:scale-110 shadow-sm">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
 
-                <!-- Preview Gambar -->
-                <img v-if="fileObj.type.startsWith('image/')" :src="fileObj.previewUrl"
-                    class="w-full h-full object-cover" />
+                    <!-- Preview Gambar -->
+                    <img v-if="fileObj.type.startsWith('image/')" :src="fileObj.previewUrl"
+                        class="w-full h-full object-cover" />
 
-                <!-- Preview Video -->
-                <div v-else class="w-full h-full flex flex-col items-center justify-center bg-slate-800 text-white p-1">
-                    <svg class="w-6 h-6 mb-1 text-orange-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd"
-                            d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
-                            clip-rule="evenodd" />
-                    </svg>
-                    <span class="text-[9px] truncate w-full text-center">{{ fileObj.file.name }}</span>
-                </div>
-            </div>
-
-            <!-- 3. KOTAK BERGARIS (INLINE DASHED DROPZONE) -->
-            <div @dragover.prevent="isDragging = true" @dragleave.prevent="isDragging = false"
-                @drop.prevent="handleDrop" @click="triggerFileInput" :class="[
-                    'relative flex-none w-32 h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all p-2 text-center group select-none',
-                    isDragging
-                        ? 'border-orange-500 bg-orange-100/60 scale-102 shadow-md'
-                        : 'border-slate-300 hover:border-orange-500 bg-white hover:bg-orange-50/40 shadow-xs'
-                ]">
-
-                <!-- Input file disembunyikan -->
-                <input type="file" ref="fileInputRef" multiple accept="image/*,video/*" class="hidden"
-                    @change="handleFileSelect" />
-
-                <div
-                    class="w-8 h-8 rounded-full bg-slate-100 group-hover:bg-orange-100 text-slate-400 group-hover:text-orange-500 flex items-center justify-center mb-1.5 transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
-                    </svg>
+                    <!-- Preview Video -->
+                    <div v-else class="w-full h-full flex flex-col items-center justify-center bg-slate-800 text-white p-1">
+                        <svg class="w-6 h-6 mb-1 text-orange-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                                clip-rule="evenodd" />
+                        </svg>
+                        <span class="text-[9px] truncate w-full text-center">{{ fileObj.file.name }}</span>
+                    </div>
                 </div>
 
-                <span class="text-[11px] font-bold text-slate-600 group-hover:text-orange-600 leading-tight">
-                    Tarik & Lepas
-                </span>
-                <span class="text-[9px] text-slate-400 group-hover:text-orange-400 mt-0.5">
-                    atau klik cari
-                </span>
+                <!-- 3. KOTAK BERGARIS (INLINE DASHED DROPZONE) -->
+                <div @dragover.prevent="isDragging = true" @dragleave.prevent="isDragging = false"
+                    @drop.prevent="handleDrop" @click="triggerFileInput" :class="[
+                        'relative flex-none w-32 h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all p-2 text-center group select-none',
+                        isDragging
+                            ? 'border-orange-500 bg-orange-100/60 scale-102 shadow-md'
+                            : 'border-slate-300 hover:border-orange-500 bg-white hover:bg-orange-50/40 shadow-xs'
+                    ]">
+
+                    <!-- Input file disembunyikan -->
+                    <input type="file" ref="fileInputRef" multiple accept="image/*,video/*" class="hidden"
+                        @change="handleFileSelect" />
+
+                    <div
+                        class="w-8 h-8 rounded-full bg-slate-100 group-hover:bg-orange-100 text-slate-400 group-hover:text-orange-500 flex items-center justify-center mb-1.5 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                        </svg>
+                    </div>
+
+                    <span class="text-[11px] font-bold text-slate-600 group-hover:text-orange-600 leading-tight">
+                        Tarik & Lepas
+                    </span>
+                    <span class="text-[9px] text-slate-400 group-hover:text-orange-400 mt-0.5">
+                        atau klik cari
+                    </span>
+                </div>
+            </template>
+
+            <!-- 4. EMPTY STATE KHUSUS MODE READ-ONLY (JIKA TIDAK ADA FOTO) -->
+            <div v-if="readonly && (!existingPhotos || existingPhotos.length === 0)"
+                class="w-full text-center py-6 text-xs text-slate-400 italic">
+                Tidak ada foto dokumentasi lapangan pada laporan ini.
             </div>
 
         </div>
@@ -159,6 +167,10 @@ const props = defineProps({
     existingPhotos: {
         type: Array,
         default: () => []
+    },
+    readonly: {
+        type: Boolean,
+        default: false
     }
 });
 

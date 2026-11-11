@@ -10,7 +10,11 @@ const auth = useAuth();
 
 const props = defineProps({
     paketId: String,
-    paket: Object
+    paket: Object,
+    nilaiKontrakAktif: {
+        type: Number,
+        default: null
+    }
 });
 
 const emit = defineEmits(["saved"]);
@@ -18,8 +22,11 @@ const emit = defineEmits(["saved"]);
 const modalVisible = ref(false);
 const isLoading = ref(false);
 const editingId = ref(null);
+const isReadOnly = ref(false);
+const archiveGroupName = ref('');
 const dateMonth = ref(null);
 const isVisibleSubmitUpdate = computed(() => {
+    if (isReadOnly.value) return false;
     if (!isEditMode.value) return false;
 
     // Jika ada file dokumentasi baru yang dipilih atau ada foto existing yang ditandai hapus, tombol simpan WAJIB muncul!
@@ -53,11 +60,17 @@ const dokumentasiUploadRef = ref(null);
 const BASE_IMAGE_URL = `${BASE_URL}/images/progress-fisik/`;
 const monthName = ref(listOfMonths);
 const isEditMode = computed(() => !!editingId.value);
-const lastProgressId = computed(() => props.paket.progressFisiks.length > 0 ? props.paket.progressFisiks[props.paket.progressFisiks.length - 1].id : null);
+const lastProgressId = computed(() => {
+    const list = props.paket?.progressFisiks;
+    return Array.isArray(list) && list.length > 0 ? list[list.length - 1].id : null;
+});
+const activeNilaiKontrakFase = ref(null);
 const selectedStatus = ref(null);
 const statusOptions = ref([
     { label: "Sesuai Target", value: "Sesuai Target" },
+    { label: "Sesuai", value: "Sesuai" },
     { label: "Terlambat", value: "Terlambat" },
+    { label: "Kritis", value: "Kritis" },
     { label: "Lebih Cepat", value: "Lebih Cepat" },
 ]);
 
@@ -82,20 +95,27 @@ const formProgress = ref({
     fotoDokumentasi: null,
 });
 
-// Method untuk membuka modal (bisa untuk Tambah atau Edit)
+// Method untuk membuka modal (bisa untuk Tambah, Edit, atau Detail Arsip)
 const openModal = (item = null) => {
 
     if (item && item.id) {
         editingId.value = item.id;
+        isReadOnly.value = Boolean(item._isReadOnly || item.canEdit === false);
+        archiveGroupName.value = item._groupName || '';
+
+        activeNilaiKontrakFase.value = item._nilaiKontrakFase != null
+            ? Number(item._nilaiKontrakFase)
+            : (props.nilaiKontrakAktif ?? Number(props.paket?.nilaiKontrakAdendum ?? props.paket?.nilaiKontrak ?? 0));
+
         const normalizedItem = {
             id: item.id,
             paketProgressFisikId: item.paketProgressFisikId || item.paketProgressKeuanganId || props.paketId || props.paket?.id || "",
             monthNumber: Number(item.monthNumber) || 1,
             mingguKe: Number(item.mingguKe) || 1,
-            monthName: item.monthName,
+            monthName: item.monthName || item.bulan,
             planPercentage: item.planPercentage !== null && item.planPercentage !== undefined ? parseFloat(item.planPercentage) : null,
             actualPercentage: item.actualPercentage !== null && item.actualPercentage !== undefined ? parseFloat(item.actualPercentage) : null,
-            actualNominal: item.actualNominal !== null && item.actualNominal !== undefined ? Number(item.actualNominal) : null,
+            actualNominal: item.actualNominal !== null && item.actualNominal !== undefined ? Number(item.actualNominal) : (item.nominalProgress !== null && item.nominalProgress !== undefined ? Number(item.nominalProgress) : null),
             deviationFisik: item.deviationFisik !== null && item.deviationFisik !== undefined ? Number(item.deviationFisik) : null,
             status: item.status,
             keterangan: item.keterangan,
@@ -116,8 +136,8 @@ const openModal = (item = null) => {
         existingDokumentasis.value = Array.isArray(item.documentations) ? [...item.documentations] : [];
         newDokumentasiFiles.value = [];
         deletedPhotoIds.value = [];
-        if (dokumentasiUploadRef.value?.resetUploadState) {
-            dokumentasiUploadRef.value.resetUploadState();
+        if (dokumentasiUploadRef.value?.clearStagedFiles) {
+            dokumentasiUploadRef.value.clearStagedFiles();
         }
 
         originalData.value = { ...normalizedItem };
@@ -126,12 +146,15 @@ const openModal = (item = null) => {
         // selectedStatus.value = item.status || "Sesuai Target";
     } else {
         editingId.value = null;
+        isReadOnly.value = false;
+        archiveGroupName.value = '';
+
+        activeNilaiKontrakFase.value = props.nilaiKontrakAktif
+            ?? Number(props.paket?.nilaiKontrakAdendum ?? props.paket?.nilaiKontrak ?? 0);
         existingDokumentasis.value = [];
         newDokumentasiFiles.value = [];
         deletedPhotoIds.value = [];
-        if (dokumentasiUploadRef.value?.resetUploadState) {
-            dokumentasiUploadRef.value.resetUploadState();
-        } else if (dokumentasiUploadRef.value?.clearStagedFiles) {
+        if (dokumentasiUploadRef.value?.clearStagedFiles) {
             dokumentasiUploadRef.value.clearStagedFiles();
         }
         const defaultData = {
@@ -162,7 +185,7 @@ const openModal = (item = null) => {
 
 // Handler tandai foto existing untuk dihapus (staged delete)
 const handleStageDeletePhoto = (photoId) => {
-    if (!photoId) return;
+    if (isReadOnly.value || !photoId) return;
     if (!deletedPhotoIds.value.includes(photoId)) {
         deletedPhotoIds.value.push(photoId);
     }
@@ -178,20 +201,17 @@ defineExpose({
 watch(
     () => formProgress.value.actualNominal,
     (newActual) => {
-        if (!modalVisible.value) return;
+        if (!modalVisible.value || isReadOnly.value) return;
 
         const payload = getChangedPayload(originalData.value, formProgress.value);
         if (Object.hasOwn(payload, 'actualNominal')) {
-            let nilaiKontrak = parseFloat(props.paket?.nilaiKontrak) || 0;
+            let nilaiKontrak = Number(activeNilaiKontrakFase.value) || 0;
+            if (!nilaiKontrak) {
+                nilaiKontrak = parseFloat(props.paket?.nilaiKontrakAdendum ?? props.paket?.nilaiKontrak) || 0;
+            }
             const actual = parseFloat(payload.actualNominal) || 0;
 
-            if (props.paket?.nilaiKontrakAdendum !== null && props.paket?.nilaiKontrakAdendum !== undefined) {
-                nilaiKontrak = parseFloat(props.paket?.nilaiKontrakAdendum) || 0;
-            }
-
             if (nilaiKontrak && nilaiKontrak > 0) {
-
-
                 const actualPercentage = (actual / nilaiKontrak) * 100;
                 formProgress.value.actualPercentage = parseFloat(actualPercentage.toFixed(2));
             }
@@ -204,7 +224,7 @@ watch(
 watch(
     () => [formProgress.value.actualPercentage, formProgress.value.planPercentage],
     ([actual, plan]) => {
-        if (!modalVisible.value) return;
+        if (!modalVisible.value || isReadOnly.value) return;
 
         const payload = getChangedPayload(originalData.value, formProgress.value);
         if (Object.hasOwn(payload, 'actualPercentage') || Object.hasOwn(payload, 'planPercentage')) {
@@ -229,6 +249,8 @@ watch(
 );
 
 const submitForm = async () => {
+    if (isReadOnly.value) return;
+
     try {
         isLoading.value = true;
         const targetId = props.paketId || props.paket?.id || formProgress.value.paketProgressFisikId;
@@ -415,9 +437,15 @@ const submitForm = async () => {
 
                         <!-- Sticky Header -->
                         <div class="sticky top-0 z-20 bg-white px-8 py-5 border-b border-slate-100 flex items-center justify-between">
-                            <h3 class="font-bold text-sm text-blue-950 uppercase tracking-wide">
-                                {{ isEditMode ? 'Edit Laporan Progres Fisik' : 'Tambah Laporan Progres Fisik' }}
-                            </h3>
+                            <div class="flex items-center gap-2.5 flex-wrap">
+                                <h3 class="font-bold text-sm text-blue-950 uppercase tracking-wide">
+                                    {{ isReadOnly ? 'Detail Laporan Progres Fisik' : (isEditMode ? 'Edit Laporan Progres Fisik' : 'Tambah Laporan Progres Fisik') }}
+                                </h3>
+                                <span v-if="isReadOnly"
+                                    class="px-2.5 py-0.5 bg-slate-100 text-slate-600 rounded-full text-[10px] font-bold uppercase tracking-wider border border-slate-200">
+                                    Arsip • Hanya Baca
+                                </span>
+                            </div>
                             <button type="button" @click="closeCallback"
                                 class="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-lg hover:bg-slate-50 cursor-pointer">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -427,21 +455,36 @@ const submitForm = async () => {
                         </div>
 
                         <div class="p-8 pt-6">
+                            <!-- Banner Informasi Mode Arsip -->
+                            <div v-if="isReadOnly"
+                                class="mb-5 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl flex items-start gap-2.5 text-xs text-slate-600">
+                                <svg class="w-4 h-4 text-slate-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                                <div>
+                                    <span class="font-bold text-slate-700">Mode Detail (Arsip Kontrak Sebelumnya):</span>
+                                    Menampilkan data asli laporan saat diinput (hanya baca) pada grup
+                                    <span class="font-semibold text-blue-950">{{ archiveGroupName || 'ini' }}</span>.
+                                    Untuk mengubah atau menghapus laporan ini, buka melalui baris pada grup fase kontrak asalnya.
+                                </div>
+                            </div>
+
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
                             <div class="grid grid-cols-2 gap-3">
                                 <div class="col-span-1">
                                     <label
                                         class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Bulan
                                         Ke-</label>
-                                    <input type="number" min="1" max="12" v-model="formProgress.monthNumber"
-                                        class="w-full bg-slate-50 text-sm text-center font-bold text-blue-950 rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none">
+                                    <input type="number" min="1" max="12" v-model="formProgress.monthNumber" :disabled="isReadOnly"
+                                        class="w-full bg-slate-50 text-sm text-center font-bold text-blue-950 rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none disabled:bg-slate-100/80 disabled:text-slate-600 disabled:cursor-not-allowed">
                                 </div>
                                 <div class="col-span-1">
                                     <label
                                         class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Minggu
                                         Ke-</label>
-                                    <input type="number" min="1" max="12" v-model="formProgress.mingguKe"
-                                        class="w-full bg-slate-50 text-sm text-center font-bold text-blue-950 rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none">
+                                    <input type="number" min="1" max="12" v-model="formProgress.mingguKe" :disabled="isReadOnly"
+                                        class="w-full bg-slate-50 text-sm text-center font-bold text-blue-950 rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none disabled:bg-slate-100/80 disabled:text-slate-600 disabled:cursor-not-allowed">
                                 </div>
 
                             </div>
@@ -449,79 +492,47 @@ const submitForm = async () => {
                                 <label
                                     class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Nama
                                     Bulan</label>
-                                <!-- <input v-if="isEditMode && !dateMonth" type="text" v-model="formProgress.monthName"
-                                    class="w-full bg-slate-50 text-sm font-bold text-blue-950 rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none"
-                                    placeholder="Contoh: JANUARI"> -->
-                                <Select v-model="formProgress.monthName" :options="monthName" optionLabel="label"
+                                <Select v-model="formProgress.monthName" :options="monthName" optionLabel="label" :disabled="isReadOnly"
                                     optionValue="value" placeholder="Pilih Bulan"
-                                    :pt="{ root: 'w-full! bg-slate-50! text-sm! font-bold! text-blue-950! rounded-xl! px-2! py-[3px]! border-none! shadow-none! focus:ring-2! focus:ring-orange-500! focus:outline-none! cursor-pointer' }" />
-                                <!-- <DatePicker v-else fluid="true" v-model="dateMonth" view="month" dateFormat="MM"
-                                    :manualInput="false"
-                                    input-class="w-full! bg-slate-50! text-sm! font-bold! text-blue-950! rounded-xl! px-4! py-3! border-none! shadow-none! focus:ring-2! focus:ring-orange-500! focus:outline-none!" /> -->
+                                    :pt="{ root: 'w-full! bg-slate-50! text-sm! font-bold! text-blue-950! rounded-xl! px-2! py-[3px]! border-none! shadow-none! focus:ring-2! focus:ring-orange-500! focus:outline-none! cursor-pointer disabled:bg-slate-100/80! disabled:cursor-not-allowed!' }" />
                             </div>
-                            <!-- <div>
-                                <label
-                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Rencana
-                                    Fisik (%)</label>
-                                <input type="number" step="0.01" v-model="formProgress.rencanaFisik"
-                                    class="w-full bg-slate-50 text-sm font-bold text-blue-950 rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none">
-                            </div> -->
                             <div>
                                 <label
                                     class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Status</label>
-                                <Select v-model="formProgress.status" :options="statusOptions" optionLabel="label"
+                                <Select v-model="formProgress.status" :options="statusOptions" optionLabel="label" :disabled="isReadOnly"
                                     optionValue="value" placeholder="Pilih status"
-                                    :pt="{ root: 'w-full! bg-slate-50! text-sm! font-bold! text-blue-950! rounded-xl! px-2! py-[3px]! border-none! shadow-none! focus:ring-2! focus:ring-orange-500! focus:outline-none! cursor-pointer' }" />
+                                    :pt="{ root: 'w-full! bg-slate-50! text-sm! font-bold! text-blue-950! rounded-xl! px-2! py-[3px]! border-none! shadow-none! focus:ring-2! focus:ring-orange-500! focus:outline-none! cursor-pointer disabled:bg-slate-100/80! disabled:cursor-not-allowed!' }" />
                             </div>
 
-                            <!-- <div>
-                                <label
-                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Nilai
-                                    Kontrak (Rp)</label>
-                                <input type="number" v-model="formProgress.nilaiKontrak"
-                                    class="w-full bg-slate-50 text-sm font-bold text-blue-950 rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none">
-                            </div> -->
                             <div class="col-span-1">
                                 <label
                                     class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Nominal
                                 </label>
-                                <InputNumber placeholder="Masukkan Nominal" name="actualNominal"
+                                <InputNumber placeholder="Masukkan Nominal" name="actualNominal" :disabled="isReadOnly"
                                     v-model="formProgress.actualNominal" :minFractionDigits="2" :maxFractionDigits="2"
                                     mode="currency" currency="IDR" locale="id-ID" class="w-full"
-                                    input-class="w-full! bg-slate-50! text-sm! font-bold! text-blue-950! rounded-xl! px-4! py-3! border-none! focus:ring-2! focus:ring-orange-500! focus:outline-none!" />
-                                <!-- <input type="number" v-model="formProgress.actualNominal"
-                                    class="w-full bg-slate-50 text-sm font-bold text-blue-950 rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none"> -->
+                                    input-class="w-full! bg-slate-50! text-sm! font-bold! text-blue-950! rounded-xl! px-4! py-3! border-none! focus:ring-2! focus:ring-orange-500! focus:outline-none! disabled:bg-slate-100/80! disabled:text-slate-600! disabled:cursor-not-allowed!" />
                             </div>
-                            <!-- <div>
-                                <label
-                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Nilai
-                                    Adendum (Rp)</label>
-                                <input type="number" v-model="formProgress.nilaiAdendum"
-                                    class="w-full bg-slate-50 text-sm font-bold text-blue-950 rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none">
-                            </div>
-                            -->
+
                             <div class="grid grid-cols-2 gap-3">
-
-
                                 <div class="col-span-1">
                                     <label
                                         class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Progress
                                         Rencana</label>
-                                    <InputNumber id="planPercentage" v-model="formProgress.planPercentage"
+                                    <InputNumber id="planPercentage" v-model="formProgress.planPercentage" :disabled="isReadOnly"
                                         mode="decimal" :minFractionDigits="0" :maxFractionDigits="2" suffix="%"
                                         input-class="w-full! bg-slate-50! text-sm! font-bold! text-blue-950! rounded-xl!
-                                    px-4! py-3! border-none! focus:ring-2! focus:ring-orange-500! focus:outline-none!" />
+                                    px-4! py-3! border-none! focus:ring-2! focus:ring-orange-500! focus:outline-none! disabled:bg-slate-100/80! disabled:text-slate-600! disabled:cursor-not-allowed!" />
 
                                 </div>
-
 
                                 <div class="col-span-1">
                                     <label
                                         class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Progress
                                         Aktual</label>
-                                    <InputNumber id="actualPercentage" v-model="formProgress.actualPercentage"
+                                    <InputNumber id="actualPercentage" v-model="formProgress.actualPercentage" :disabled="isReadOnly"
                                         mode="decimal" :minFractionDigits="0" :maxFractionDigits="2" suffix="%"
-                                        input-class="w-full! bg-slate-50! text-sm! font-bold! text-blue-950! rounded-xl! px-4! py-3! border-none! focus:ring-2! focus:ring-orange-500! focus:outline-none!" />
+                                        input-class="w-full! bg-slate-50! text-sm! font-bold! text-blue-950! rounded-xl! px-4! py-3! border-none! focus:ring-2! focus:ring-orange-500! focus:outline-none! disabled:bg-slate-100/80! disabled:text-slate-600! disabled:cursor-not-allowed!" />
                                 </div>
                             </div>
 
@@ -529,18 +540,11 @@ const submitForm = async () => {
                                 <label
                                     class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Deviasi
                                     (%)</label>
-                                <InputNumber id="deviationFisik" v-model="formProgress.deviationFisik" mode="decimal"
+                                <InputNumber id="deviationFisik" v-model="formProgress.deviationFisik" mode="decimal" :disabled="isReadOnly"
                                     :minFractionDigits="0" :maxFractionDigits="2" suffix="%" class="w-full" input-class="w-full! bg-slate-50! text-sm! font-bold! text-blue-950! rounded-xl! px-4!
-                                py-3! border-none! focus:ring-2! focus:ring-orange-500! focus:outline-none!" />
+                                py-3! border-none! focus:ring-2! focus:ring-orange-500! focus:outline-none! disabled:bg-slate-100/80! disabled:text-slate-600! disabled:cursor-not-allowed!" />
 
                             </div>
-                            <!-- <div>
-                                <label
-                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Deviasi
-                                    Keuangan</label>
-                                <input type="text" readonly v-model="formProgress.deviationFinance"
-                                    class="w-full bg-red-50 text-sm font-bold text-red-600 rounded-xl px-4 py-3 border-none focus:outline-none">
-                            </div> -->
 
                             <div class="md:col-span-3">
                                 <div class="grid grid-cols-2 gap-3">
@@ -549,36 +553,34 @@ const submitForm = async () => {
                                         <label
                                             class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Keterangan
                                             / Kendala</label>
-                                        <textarea rows="2" :required="formProgress.status == 'Terlambat'"
+                                        <textarea rows="2" :required="formProgress.status == 'Terlambat'" :disabled="isReadOnly"
                                             v-model="formProgress.keterangan"
-                                            class="w-full bg-slate-50 text-sm font-medium text-blue-950 rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none resize-none"
+                                            class="w-full bg-slate-50 text-sm font-medium text-blue-950 rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none resize-none disabled:bg-slate-100/80 disabled:text-slate-600 disabled:cursor-not-allowed"
                                             placeholder="Tuliskan keterangan laporan..."></textarea>
                                     </div>
                                     <div class="col-start-2 col-end-3">
 
                                         <label
                                             class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Tindak Lanjut</label>
-                                        <textarea rows="2" :required="formProgress.status == 'Terlambat'"
+                                        <textarea rows="2" :required="formProgress.status == 'Terlambat'" :disabled="isReadOnly"
                                             v-model="formProgress.tindakLanjut"
-                                            class="w-full bg-slate-50 text-sm font-medium text-blue-950 rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none resize-none"
+                                            class="w-full bg-slate-50 text-sm font-medium text-blue-950 rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none resize-none disabled:bg-slate-100/80 disabled:text-slate-600 disabled:cursor-not-allowed"
                                             placeholder="Tuliskan keterangan tindak lanjut..."></textarea>
                                     </div>
-                                    <!-- <Message severity="error" size="small" variant="simple"
-                                        v-if="formProgress.status == 'Terlambat'">Harap isi keterangan / kendala
-                                    </Message> -->
                                 </div>
                             </div>
                             <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <ImageUpload v-model="formProgress.fotoTipikal" label="Tipikal Potongan Melintang"
-                                    :isEditMode="isEditMode" :existing-url="existingFotos.fotoTipikal" />
+                                    :isEditMode="isEditMode" :existing-url="existingFotos.fotoTipikal" :readonly="isReadOnly" />
                                 <ImageUpload v-model="formProgress.fotoStreetMap" label="Street Map"
-                                    :isEditMode="isEditMode" :existing-url="existingFotos.fotoStreetMap" />
+                                    :isEditMode="isEditMode" :existing-url="existingFotos.fotoStreetMap" :readonly="isReadOnly" />
                             </div>
 
                             <!-- Upload Dokumentasi Per Progres Fisik -->
                             <ProgressDokumentasiUpload 
                                 ref="dokumentasiUploadRef"
                                 :existing-photos="existingDokumentasis"
+                                :readonly="isReadOnly"
                                 @update:files="newDokumentasiFiles = $event"
                                 @remove-photo="handleStageDeletePhoto" />
                         </div>
@@ -586,11 +588,11 @@ const submitForm = async () => {
                         <!-- ACTION BUTTONS -->
                         <div class="flex items-center justify-end gap-4 pt-6 border-t border-slate-100">
                             <button type="button" @click="closeCallback"
-                                class="px-8 py-3.5 rounded-full text-sm font-bold text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition-colors">
-                                Batal
+                                class="px-8 py-3.5 rounded-full text-sm font-bold text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition-colors cursor-pointer">
+                                {{ isReadOnly ? 'Tutup' : 'Batal' }}
                             </button>
-                            <button v-if="isVisibleSubmitUpdate || !isEditMode" type="submit" :disabled="isLoading"
-                                class="px-8 py-3.5 rounded-full text-sm font-bold text-white bg-orange-500 hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/30 flex items-center gap-2 hover:-translate-y-0.5 disabled:opacity-50">
+                            <button v-if="!isReadOnly && (isVisibleSubmitUpdate || !isEditMode)" type="submit" :disabled="isLoading"
+                                class="px-8 py-3.5 rounded-full text-sm font-bold text-white bg-orange-500 hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/30 flex items-center gap-2 hover:-translate-y-0.5 disabled:opacity-50 cursor-pointer">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                         d="M5 13l4 4L19 7">

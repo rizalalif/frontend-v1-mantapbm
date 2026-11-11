@@ -245,13 +245,11 @@ const handleExportExcel = () => {
             noKontrak: paket.noKontrak || '-',
             penyediaJasa: paket.penyediaJasa || paket.namaPenyediaJasa || '-',
             nilaiPagu: Number(paket.nilaiPagu) || 0,
-            nilaiKontrak: Number(paket.nilaiKontrak) || 0,
+            nilaiKontrak: getActiveNilaiKontrak(paket),
             rencanaFisik: `${plan.toFixed(2)}%`,
             aktualFisik: `${actual.toFixed(2)}%`,
             deviasiFisik: `${deviation > 0 ? '+' : ''}${deviation.toFixed(2)}%`,
-            aktualKeuangan: paket.totalKeuanganPercentage != null
-                ? `${Number(paket.totalKeuanganPercentage).toFixed(2)}%`
-                : '0%',
+            aktualKeuangan: `${getPaketKeuanganPercentage(paket).toFixed(2)}%`,
             tanggalMulai: formatDateShort(paket.tanggalMulai),
             tanggalAkhir: formatDateShort(paket.tanggalAkhir),
             statusKondisi: capitalizeFirstLetter(paket.statusKondisi || 'Aman'),
@@ -602,6 +600,38 @@ const deletePaket = async (id) => {
 };
 
 const expandedRowGroups = ref([])
+// Helper mendapatkan nilai kontrak aktif (mengutamakan adendum)
+const getActiveNilaiKontrak = (paket) => {
+    if (!paket) return 0;
+    const raw = paket.nilaiKontrakTerkini ?? paket.nilaiKontrakAdendum ?? paket.nilaiKontrak;
+    return Number(raw) || 0;
+};
+
+// Helper mendapatkan total nominal fisik paket
+const getPaketFisikNominal = (paket) => {
+    if (!paket) return 0;
+    if (paket.totalFisikNominal !== undefined && paket.totalFisikNominal !== null) {
+        return Number(paket.totalFisikNominal) || 0;
+    }
+    if (Array.isArray(paket.progressFisiks) && paket.progressFisiks.length > 0) {
+        return paket.progressFisiks.reduce((sum, item) => sum + (Number(item?.actualNominal) || 0), 0);
+    }
+    return 0;
+};
+
+// Helper mendapatkan total nominal keuangan paket
+const getPaketKeuanganNominal = (paket) => {
+    if (!paket) return 0;
+    if (paket.totalKeuanganNominal !== undefined && paket.totalKeuanganNominal !== null) {
+        return Number(paket.totalKeuanganNominal) || 0;
+    }
+    const list = paket.progressKeuangans || paket.progressKeuangan;
+    if (Array.isArray(list) && list.length > 0) {
+        return list.reduce((sum, item) => sum + (Number(item?.actualFinance) || 0), 0);
+    }
+    return 0;
+};
+
 // Fungsi menghitung Total Pagu per Grup
 const hitungTotalPaguGrup = (namaGrup) => {
     return filteredPaket.value
@@ -609,31 +639,38 @@ const hitungTotalPaguGrup = (namaGrup) => {
         .reduce((sum, p) => sum + (Number(p.nilaiPagu) || 0), 0);
 };
 
-// Fungsi menghitung Total Kontrak per Grup
+// Fungsi menghitung Total Kontrak per Grup (menggunakan kontrak aktif)
 const hitungTotalKontrakGrup = (namaGrup) => {
     return filteredPaket.value
-        .filter(p => p.jenisPekerjaan === namaGrup && p.nilaiKontrak != null)
-        .reduce((sum, p) => sum + (Number(p.nilaiKontrak) || 0), 0);
-}
-// Fungsi menghitung Total Kontrak per Grup
+        .filter(p => p.jenisPekerjaan === namaGrup)
+        .reduce((sum, p) => sum + getActiveNilaiKontrak(p), 0);
+};
+
+// Fungsi menghitung Persentase Fisik Grup = (Total Nominal Fisik Grup / Total Kontrak Aktif Grup) * 100
 const hitungTotalFisikPercentage = (namaGrup) => {
+    const totalKontrak = hitungTotalKontrakGrup(namaGrup);
+    if (!totalKontrak) return '0.00';
+
     const totalProgress = filteredPaket.value
         .filter(p => p.jenisPekerjaan === namaGrup)
-        .reduce((sum, p) => sum + (Number(p.totalFisikNominal) || 0), 0);
+        .reduce((sum, p) => sum + getPaketFisikNominal(p), 0);
 
-    const totalKontrak = hitungTotalKontrakGrup(namaGrup)
-    const totalFisikPercentage = ((totalProgress / totalKontrak) * 100).toFixed(2)
-    return isNaN(totalFisikPercentage) || !isFinite(totalFisikPercentage) ? 0 : totalFisikPercentage
-}
+    const totalFisikPercentage = ((totalProgress / totalKontrak) * 100).toFixed(2);
+    return isNaN(totalFisikPercentage) || !isFinite(totalFisikPercentage) ? '0.00' : totalFisikPercentage;
+};
+
+// Fungsi menghitung Persentase Keuangan Grup = (Total Nominal Keuangan Grup / Total Kontrak Aktif Grup) * 100
 const hitungTotalKeuanganPercentage = (namaGrup) => {
-    const totalProgress = filteredPaket.value
-        .filter(p => p.jenisPekerjaan === namaGrup && p.nilaiKontrak != null)
-        .reduce((sum, p) => sum + (Number(p.totalKeuanganNominal) || 0), 0);
+    const totalKontrak = hitungTotalKontrakGrup(namaGrup);
+    if (!totalKontrak) return '0.00';
 
-    const totalKontrak = hitungTotalKontrakGrup(namaGrup)
-    const totalKeuanganPercentage = ((totalProgress / totalKontrak) * 100).toFixed(2)
-    return isNaN(totalKeuanganPercentage) || !isFinite(totalKeuanganPercentage) ? 0 : totalKeuanganPercentage
-}
+    const totalProgress = filteredPaket.value
+        .filter(p => p.jenisPekerjaan === namaGrup)
+        .reduce((sum, p) => sum + getPaketKeuanganNominal(p), 0);
+
+    const totalKeuanganPercentage = ((totalProgress / totalKontrak) * 100).toFixed(2);
+    return isNaN(totalKeuanganPercentage) || !isFinite(totalKeuanganPercentage) ? '0.00' : totalKeuanganPercentage;
+};
 
 // ==========================================
 // HELPER PERHITUNGAN PROGRESS FISIK PER PAKET & GRUP
@@ -643,9 +680,11 @@ const getPaketPlanPercentage = (paket) => {
     if (paket.totalPlanPercentage !== undefined && paket.totalPlanPercentage !== null) {
         return Number(paket.totalPlanPercentage) || 0;
     }
+
     if (Array.isArray(paket.progressFisiks) && paket.progressFisiks.length > 0) {
         return paket.progressFisiks.reduce((sum, item) => sum + (Number(item?.planPercentage) || 0), 0);
     }
+
     if (paket.planPercentage !== undefined && paket.planPercentage !== null) {
         return Number(paket.planPercentage) || 0;
     }
@@ -654,14 +693,34 @@ const getPaketPlanPercentage = (paket) => {
 
 const getPaketActualPercentage = (paket) => {
     if (!paket) return 0;
+    if (paket.totalFisikPercentage !== undefined && paket.totalFisikPercentage !== null) {
+        return Number(paket.totalFisikPercentage) || 0;
+    }
     if (paket.totalActualPercentage !== undefined && paket.totalActualPercentage !== null) {
         return Number(paket.totalActualPercentage) || 0;
     }
+
+    const kontrakAktif = getActiveNilaiKontrak(paket);
+    if (kontrakAktif > 0) {
+        const totalNominal = getPaketFisikNominal(paket);
+        return (totalNominal / kontrakAktif) * 100;
+    }
+
     if (Array.isArray(paket.progressFisiks) && paket.progressFisiks.length > 0) {
         return paket.progressFisiks.reduce((sum, item) => sum + (Number(item?.actualPercentage) || 0), 0);
     }
-    if (paket.totalFisikPercentage !== undefined && paket.totalFisikPercentage !== null) {
-        return Number(paket.totalFisikPercentage) || 0;
+    return 0;
+};
+
+const getPaketKeuanganPercentage = (paket) => {
+    if (!paket) return 0;
+    if (paket.totalKeuanganPercentage !== undefined && paket.totalKeuanganPercentage !== null) {
+        return Number(paket.totalKeuanganPercentage) || 0;
+    }
+    const kontrakAktif = getActiveNilaiKontrak(paket);
+    if (kontrakAktif > 0) {
+        const totalNominal = getPaketKeuanganNominal(paket);
+        return (totalNominal / kontrakAktif) * 100;
     }
     return 0;
 };
@@ -1054,9 +1113,9 @@ onMounted(() => {
                 }">
                     <template #body="slotProps">
                         <div class="py-2.5 px-2 font-semibold text-right text-blue-950 text-xs flex justify-between items-center w-full"
-                            :title="formatRupiah(slotProps.data.nilaiKontrak)">
+                            :title="formatRupiah(getActiveNilaiKontrak(slotProps.data))">
                             <span>Rp.</span>
-                            <span>{{ formatRupiah(slotProps.data.nilaiKontrak) }}</span>
+                            <span>{{ formatRupiah(getActiveNilaiKontrak(slotProps.data)) }}</span>
                         </div>
                     </template>
                 </Column>
@@ -1106,8 +1165,7 @@ onMounted(() => {
                 }">
                     <template #body="slotProps">
                         <div class="py-2.5 font-bold text-center text-blue-950 text-xs">
-                            {{ slotProps.data.totalKeuanganPercentage ?
-                                slotProps.data.totalKeuanganPercentage.toFixed(1) + '%' : '0%' }}
+                            {{ getPaketKeuanganPercentage(slotProps.data).toFixed(2) }}%
                         </div>
                     </template>
                 </Column>
