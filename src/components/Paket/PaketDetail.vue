@@ -66,10 +66,12 @@ import SerahTerimaForm from '../SerahTerima/SerahTerimaForm.vue';
 const { setPaketName } = useBreadcrumb();
 const docRef = ref(null);
 
-async function getDetailPaket() {
+async function getDetailPaket({ silent = false } = {}) {
 
     try {
-        isLoading.value = true;
+        if (!silent) {
+            isLoading.value = true;
+        }
         error.value = false;
         if (auth.isLoggedIn) {
             const response = await api.get(`/paket/kode/${props.kodePaket}`);
@@ -80,17 +82,24 @@ async function getDetailPaket() {
             }
             return data;
         }
-    } catch (error) {
-        console.error("Error fetching data:", error);
-        error.value = true;
-        errorMessage.value = error.message || "Gagal memuat data paket";
+    } catch (err) {
+        console.error("Error fetching data:", err);
+        if (!silent) {
+            error.value = true;
+            errorMessage.value = err.message || "Gagal memuat data paket";
+        }
     } finally {
-        isLoading.value = false;
+        if (!silent) {
+            isLoading.value = false;
+        }
     }
 }
 
 const refreshPaketAndDocs = async () => {
-    paket.value = await getDetailPaket();
+    const freshData = await getDetailPaket({ silent: true });
+    if (freshData) {
+        paket.value = freshData;
+    }
     if (docRef.value?.fetchDocumentations) {
         docRef.value.fetchDocumentations();
     }
@@ -209,7 +218,7 @@ watch(
             <Transition name="fade">
                 <div id="tab-fisik" class="tab-content" v-show="activeTab === 'fisik'">
 
-                    <ProgressFisikTable isVisibleHeader="false" :progress-list="paket?.progressFisiks"
+                    <ProgressFisikTable isVisibleHeader="false" :is-active="activeTab === 'fisik'" :progress-list="paket?.progressFisiks"
                         @submit-success="onDataAdded" :paketId="paket?.id" :paket="paket"
                         @refresh="refreshPaketAndDocs" />
                 </div>
@@ -218,7 +227,7 @@ watch(
             <!-- ================= TAB C: PROGRES KEUANGAN ================= -->
             <Transition name="fade">
                 <div id="tab-keuangan" class="tab-content" v-show="activeTab === 'keuangan'">
-                    <ProgressKeuanganTable :isVisibleHeader="true" :progress-list="paket?.progressKeuangans"
+                    <ProgressKeuanganTable :isVisibleHeader="true" :is-active="activeTab === 'keuangan'" :progress-list="paket?.progressKeuangans"
                         @submit-success="onDataAdded" :paketId="paket?.id" :paket="paket"
                         @refresh="refreshPaketAndDocs" />
 
@@ -237,8 +246,8 @@ watch(
                 <!-- MIDDLE SECTION: CHARTS (Left/Center) & KENDALA (Right Vertically) -->
                 <div id="tab-dashboard" class="tab-content" v-show="activeTab === 'dashboard'">
 
-                    <SummaryDetailPaket :paketId="paket?.id" :paket="paket"
-                        @refresh="async () => { paket = await getDetailPaket() }" />
+                    <SummaryDetailPaket :paketId="paket?.id" :paket="paket" :is-active="activeTab === 'dashboard'"
+                        @refresh="refreshPaketAndDocs" />
                 </div>
             </Transition>
 
@@ -248,14 +257,14 @@ watch(
                 <div id="tab-adendum" class="tab-content" v-show="activeTab === 'adendum'">
                     <AdendumTable :adendum-list="paket?.riwayatAdendums" :paket-id="paket?.id"
                         :paket="paket" @submit-success="onDataAdded"
-                        @refresh="async () => { paket = await getDetailPaket() }" />
+                        @refresh="refreshPaketAndDocs" />
 
                 </div>
             </Transition>
             <Transition name="fade">
                 <div id="tab-stp" class="tab-content" v-show="activeTab === 'stp'">
-                    <SerahTerimaForm :paket="paket" :paket-id="paket?.id" @submit-success="onDataAdded"
-                        @refresh="async () => { paket = await getDetailPaket() }" />
+                    <SerahTerimaForm :paket="paket" :paket-id="paket?.id" :is-active="activeTab === 'stp'" @submit-success="onDataAdded"
+                        @refresh="refreshPaketAndDocs" />
                 </div>
             </Transition>
         </div>

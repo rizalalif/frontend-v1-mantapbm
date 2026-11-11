@@ -113,6 +113,10 @@ const props = defineProps({
     paketId: {
         type: String,
         default: ''
+    },
+    isActive: {
+        type: Boolean,
+        default: true
     }
 });
 
@@ -125,12 +129,81 @@ const form = ref({
     tglStp: new Date().toISOString().split('T')[0]
 });
 
-// Menghitung persentase aktual dari AKUMULASI (penjumlahan seluruh progres fisik)
-const totalActualPercentage = computed(() => {
-    const list = props.paket?.progressFisiks || [];
-    if (!Array.isArray(list) || list.length === 0) return 0;
+const effectivePaketId = computed(() => props.paketId || props.paket?.id || null);
 
-    return list.reduce((sum, item) => sum + (Number(item?.actualPercentage) || 0), 0);
+// State data grouped progress fisik
+const groupedData = ref(null);
+const isLoadingGrouped = ref(false);
+
+const fetchGroupedFisik = async () => {
+    if (!effectivePaketId.value) return;
+    try {
+        isLoadingGrouped.value = true;
+        const res = await api.get(`/paket/${effectivePaketId.value}/progress-fisik`);
+        if (res.data?.data) {
+            groupedData.value = res.data.data;
+        }
+    } catch (err) {
+        console.error('Gagal mengambil grouped progress fisik untuk STP:', err);
+    } finally {
+        isLoadingGrouped.value = false;
+    }
+};
+
+// Fetch grouped data saat paketId tersedia atau berubah, atau saat tab aktif
+watch(
+    () => [effectivePaketId.value, props.isActive],
+    ([id, active]) => {
+        if (id && active) {
+            fetchGroupedFisik();
+        }
+    },
+    { immediate: true }
+);
+
+// Menghitung persentase aktual akumulatif acuan terkini (mengikuti grouping adendum aktif)
+const totalActualPercentage = computed(() => {
+    // 1. Prioritas Utama: Dari endpoint grouped progress fisik (fase/adendum aktif terkini)
+    if (groupedData.value?.groups && Array.isArray(groupedData.value.groups) && groupedData.value.groups.length > 0) {
+        const groups = groupedData.value.groups;
+        const activeAdendumId = groupedData.value.adendumAktifId;
+
+        // Cari grup fase aktif
+        const activeGroup = groups.find(g =>
+            activeAdendumId ? g.riwayatAdendumId === activeAdendumId : g.faseKe === 0
+        ) || groups[groups.length - 1];
+
+        if (activeGroup?.items && Array.isArray(activeGroup.items) && activeGroup.items.length > 0) {
+            const lastItem = activeGroup.items[activeGroup.items.length - 1];
+            if (lastItem?.progressAktual !== undefined && lastItem?.progressAktual !== null) {
+                return Number(lastItem.progressAktual) || 0;
+            }
+        }
+    }
+
+    // 2. Fallback Kalkulasi On-The-Fly: Total nominal progress fisik dibagi nilai kontrak terkini
+    const list = props.paket?.progressFisiks;
+    if (Array.isArray(list) && list.length > 0) {
+        const totalNominal = list.reduce((sum, item) => sum + (Number(item?.actualNominal ?? item?.nominalProgress) || 0), 0);
+        const nilaiKontrakAcuan = Number(props.paket?.nilaiKontrakAdendum ?? props.paket?.nilaiKontrak ?? 0);
+
+        if (nilaiKontrakAcuan > 0) {
+            return parseFloat(((totalNominal / nilaiKontrakAcuan) * 100).toFixed(2));
+        }
+
+        // Fallback akumulasi actualPercentage lama jika nilai kontrak 0
+        return list.reduce((sum, item) => sum + (Number(item?.actualPercentage) || 0), 0);
+    }
+
+    // 3. Fallback jika ada totalActualPercentage / totalFisikPercentage di paket
+    if (props.paket?.totalActualPercentage !== undefined && props.paket?.totalActualPercentage !== null) {
+        return Number(props.paket.totalActualPercentage) || 0;
+    }
+    if (props.paket?.totalFisikPercentage !== undefined && props.paket?.totalFisikPercentage !== null) {
+        return Number(props.paket.totalFisikPercentage) || 0;
+    }
+
+    return 0;
 });
 
 // Pengecekan apakah total akumulasi sudah mencapai 100%
