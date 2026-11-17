@@ -10,6 +10,7 @@ import { useBreadcrumb } from '@/composables/useBreadcrumb';
 import { useDashboardExport } from '@/composables/useDashboardExport';
 import logoKaltim from '@/assets/images/logo_pemprov_kaltim.webp';
 import logoBinaMarga from '@/assets/images/logo_binamarga.webp';
+import logoTerasJalan from '@/assets/images/logo-terasjalan.png';
 import motifKaltim from '@/assets/images/motif_kaltim.jpg';
 import SidebarIcon from '@primeicons/vue/sidebar';
 const { isGeneratingPdf, triggerExport } = useDashboardExport();
@@ -236,18 +237,25 @@ onUnmounted(() => {
                     </Transition>
 
                     <template v-for="page in filteredPageList" :key="page.id">
-                        <!-- Link Eksternal (Ghost Button / Card Border Style dengan Suffix Icon & Aksen Gold) -->
+                        <!-- Link Eksternal (Ghost Button / Card Border Style dengan Logo Bundar & Suffix Icon) -->
                         <a v-if="page.isExternal" :href="page.url" :target="page.target || '_blank'"
                             rel="noopener noreferrer" :title="isSidebarMinimized ? page.name : ''"
                             :class="isSidebarMinimized ? 'justify-center px-0 py-3.5' : 'justify-between px-4 py-3.5'"
                             class="flex items-center rounded-[20px] transition-all border border-white/15 bg-white/5 hover:bg-amber-400/10 hover:border-amber-400/40 text-amber-300 hover:text-amber-200 shadow-sm group">
-                            <!-- Label Teks (Prefix jika expanded) -->
-                            <span v-if="!isSidebarMinimized" class="truncate font-semibold tracking-wide text-sm capitalize">
-                                {{ page.name }}
-                            </span>
+                            <!-- Container Logo & Label Teks -->
+                            <div class="flex items-center gap-4 min-w-0">
+                                <!-- Logo Bina Marga Bundar -->
+                                <div class="w-8 h-8 overflow-hidden rounded-full bg-white shrink-0 flex items-center justify-center p-0.5 shadow-sm group-hover:scale-105 transition-transform"
+                                    title="Teras Jalan - Bina Marga">
+                                    <img :src="logoTerasJalan" alt="Logo Bina Marga" class="w-full h-full object-cover rounded-full" />
+                                </div>
+                                <span v-if="!isSidebarMinimized" class="truncate font-semibold tracking-wider text-xs uppercase">
+                                    {{ page.name }}
+                                </span>
+                            </div>
 
                             <!-- Suffix Icon (Ikon Eksternal di Sisi Kanan) -->
-                            <svg class="w-4 h-4 shrink-0 text-amber-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"
+                            <svg v-if="!isSidebarMinimized" class="w-4 h-4 shrink-0 text-amber-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform ml-2"
                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" :d="page.icon">
                                 </path>
@@ -335,8 +343,8 @@ onUnmounted(() => {
                 </div>
 
                 <!-- Daftar Akun Instagram Resmi -->
-                <div :class="isSidebarMinimized ? 'items-center px-0' : 'items-start px-2'"
-                    class="flex flex-col gap-2 transition-all">
+                <div :class="isSidebarMinimized ? 'justify-center items-center px-0' : 'items-start px-2'"
+                    class="flex gap-2 transition-all">
                     <!-- Akun 1: @dpupr_kaltim -->
                     <a href="https://www.instagram.com/dpupr_kaltim" target="_blank" rel="noopener noreferrer"
                         :title="isSidebarMinimized ? '@dpupr_kaltim' : ''"
@@ -458,7 +466,12 @@ onUnmounted(() => {
                                 <a v-if="page.isExternal" :href="page.url" :target="page.target || '_blank'"
                                     rel="noopener noreferrer"
                                     class="flex items-center justify-between px-4 py-3.5 rounded-xl transition-all border border-slate-200 bg-amber-50/50 hover:bg-amber-100/50 text-amber-700 hover:text-amber-800 group">
-                                    <span class="font-semibold text-sm capitalize">{{ page.name }}</span>
+                                    <div class="flex items-center gap-3 min-w-0">
+                                        <div class="w-6 h-6 rounded-full overflow-hidden bg-white shrink-0 flex items-center justify-center p-0.5 shadow-sm border border-slate-100">
+                                            <img :src="logoBinaMarga" alt="Logo Bina Marga" class="w-full h-full object-cover rounded-full" />
+                                        </div>
+                                        <span class="font-semibold text-xs uppercase tracking-wider truncate">{{ page.name }}</span>
+                                    </div>
                                     <svg class="w-4 h-4 shrink-0 text-amber-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                             :d="page.icon"></path>
