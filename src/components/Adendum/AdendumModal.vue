@@ -125,7 +125,7 @@ const submitForm = async () => {
                                 Nilai Adendum (Rp)
                             </label>
                             <InputNumber v-model="formAdendum.nilaiAdendum" mode="currency" currency="IDR"
-                                locale="id-ID" :minFractionDigits="0" placeholder="Rp 0" required class="w-full"
+                                locale="id-ID" :minFractionDigits="2" :maxFractionDigits="2" placeholder="Masukkan Nominal" required class="w-full"
                                 input-class="w-full! bg-slate-50! text-sm! font-bold! text-blue-950! rounded-xl! px-4! py-3! border-none! focus:ring-2! focus:ring-orange-500! focus:outline-none!" />
                         </div>
                     </div>
