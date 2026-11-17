@@ -614,7 +614,12 @@ const getPaketFisikNominal = (paket) => {
         return Number(paket.totalFisikNominal) || 0;
     }
     if (Array.isArray(paket.progressFisiks) && paket.progressFisiks.length > 0) {
-        return paket.progressFisiks.reduce((sum, item) => sum + (Number(item?.actualNominal) || 0), 0);
+        const sorted = [...paket.progressFisiks].sort((a, b) => {
+            if (a.monthNumber !== b.monthNumber) return a.monthNumber - b.monthNumber;
+            if (a.mingguKe !== b.mingguKe) return a.mingguKe - b.mingguKe;
+            return new Date(a.tglLaporan || 0) - new Date(b.tglLaporan || 0);
+        });
+        return Number(sorted[sorted.length - 1]?.actualNominal) || 0;
     }
     return 0;
 };
@@ -682,7 +687,12 @@ const getPaketPlanPercentage = (paket) => {
     }
 
     if (Array.isArray(paket.progressFisiks) && paket.progressFisiks.length > 0) {
-        return paket.progressFisiks.reduce((sum, item) => sum + (Number(item?.planPercentage) || 0), 0);
+        const sorted = [...paket.progressFisiks].sort((a, b) => {
+            if (a.monthNumber !== b.monthNumber) return a.monthNumber - b.monthNumber;
+            if (a.mingguKe !== b.mingguKe) return a.mingguKe - b.mingguKe;
+            return new Date(a.tglLaporan || 0) - new Date(b.tglLaporan || 0);
+        });
+        return Number(sorted[sorted.length - 1]?.planPercentage) || 0;
     }
 
     if (paket.planPercentage !== undefined && paket.planPercentage !== null) {
@@ -700,14 +710,19 @@ const getPaketActualPercentage = (paket) => {
         return Number(paket.totalActualPercentage) || 0;
     }
 
+    if (Array.isArray(paket.progressFisiks) && paket.progressFisiks.length > 0) {
+        const sorted = [...paket.progressFisiks].sort((a, b) => {
+            if (a.monthNumber !== b.monthNumber) return a.monthNumber - b.monthNumber;
+            if (a.mingguKe !== b.mingguKe) return a.mingguKe - b.mingguKe;
+            return new Date(a.tglLaporan || 0) - new Date(b.tglLaporan || 0);
+        });
+        return Number(sorted[sorted.length - 1]?.actualPercentage) || 0;
+    }
+
     const kontrakAktif = getActiveNilaiKontrak(paket);
     if (kontrakAktif > 0) {
         const totalNominal = getPaketFisikNominal(paket);
         return (totalNominal / kontrakAktif) * 100;
-    }
-
-    if (Array.isArray(paket.progressFisiks) && paket.progressFisiks.length > 0) {
-        return paket.progressFisiks.reduce((sum, item) => sum + (Number(item?.actualPercentage) || 0), 0);
     }
     return 0;
 };
@@ -729,6 +744,17 @@ const getPaketDeviationPercentage = (paket) => {
     if (!paket) return 0;
     if (paket.totalDeviationPercentage !== undefined && paket.totalDeviationPercentage !== null) {
         return Number(paket.totalDeviationPercentage) || 0;
+    }
+    if (Array.isArray(paket.progressFisiks) && paket.progressFisiks.length > 0) {
+        const sorted = [...paket.progressFisiks].sort((a, b) => {
+            if (a.monthNumber !== b.monthNumber) return a.monthNumber - b.monthNumber;
+            if (a.mingguKe !== b.mingguKe) return a.mingguKe - b.mingguKe;
+            return new Date(a.tglLaporan || 0) - new Date(b.tglLaporan || 0);
+        });
+        const last = sorted[sorted.length - 1];
+        if (last?.deviationFisik !== undefined && last?.deviationFisik !== null) {
+            return Number(last.deviationFisik);
+        }
     }
     return getPaketActualPercentage(paket) - getPaketPlanPercentage(paket);
 };

@@ -517,16 +517,11 @@ const activeSourceGroups = computed(() => {
         return wA - wB;
     });
 
-    let runningActual = 0;
-    let runningPlan = 0;
-    let runningNominal = 0;
-
     const items = sortedList.map(item => {
         const nominal = Number(item?.actualNominal ?? item?.nominalProgress ?? 0);
-        runningNominal += nominal;
-        runningActual += Number(item?.actualPercentage ?? 0);
-        runningPlan += Number(item?.planPercentage ?? 0);
-        const deviasi = parseFloat((runningActual - runningPlan).toFixed(2));
+        const actualPercentage = Number(item?.actualPercentage ?? 0);
+        const planPercentage = Number(item?.planPercentage ?? 0);
+        const deviasi = Number(item?.deviationFisik !== undefined && item?.deviationFisik !== null ? item.deviationFisik : parseFloat((actualPercentage - planPercentage).toFixed(2)));
 
         return {
             id: item?.id,
@@ -536,9 +531,9 @@ const activeSourceGroups = computed(() => {
             monthNumber: Number(item?.monthNumber) || 1,
             mingguKe: Number(item?.mingguKe) || 1,
             nominalProgress: nominal,
-            nominalKumulatif: runningNominal,
-            progressRencana: parseFloat(runningPlan.toFixed(2)),
-            progressAktual: parseFloat(runningActual.toFixed(2)),
+            nominalKumulatif: nominal,
+            progressRencana: planPercentage,
+            progressAktual: actualPercentage,
             deviasi,
             status: item?.status || 'Sesuai Target',
             keterangan: item?.keterangan,
@@ -600,12 +595,12 @@ const flattenedGroupedItems = computed(() => {
             return;
         }
 
-        // Ringkasan untuk baris groupheader
-        const summaryNominal = filteredItems.reduce((acc, it) => acc + (Number(it.nominalProgress) || 0), 0);
+        // Ringkasan untuk baris groupheader: HANYA MENGAMBIL PROGRESS TERAKHIR
         const lastVisible = filteredItems[filteredItems.length - 1];
-        const summaryRencana = Number(lastVisible?.progressRencana ?? 0);
-        const summaryAktual = Number(lastVisible?.progressAktual ?? 0);
-        const summaryDeviasi = Number(lastVisible?.deviasi ?? 0);
+        const summaryNominal = Number(lastVisible?.nominalProgress ?? lastVisible?.actualNominal ?? 0);
+        const summaryRencana = Number(lastVisible?.progressRencana ?? lastVisible?.planPercentage ?? 0);
+        const summaryAktual = Number(lastVisible?.progressAktual ?? lastVisible?.actualPercentage ?? 0);
+        const summaryDeviasi = Number(lastVisible?.deviasi ?? lastVisible?.deviationFisik ?? 0);
         const summaryStatus = lastVisible?.status || 'Sesuai';
         const isActiveGroup = groupedMeta.value.adendumAktifId
             ? group.riwayatAdendumId === groupedMeta.value.adendumAktifId

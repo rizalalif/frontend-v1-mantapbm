@@ -661,32 +661,31 @@ const downloadPdf = async () => {
             }
         });
 
-        // 4. Inisialisasi dokumen jsPDF KERTAS A4 LANDSCAPE (SAMA PERSIS DENGAN PaketPekerjaan.vue & NewDashboard.vue)
+        // 4. Inisialisasi dokumen jsPDF dengan ukuran kertas mengikuti dimensi asli dashboard
         const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+        // Konversi ukuran piksel kanvas ke milimeter (1 px = 25.4 / 96 mm)
+        // Dibagi scale: 2 (retina) untuk mendapatkan ukuran tampilan asli (1x)
+        const pxToMm = 25.4 / 96;
+        const scaleFactor = 2;
+        const contentWidth = (canvas.width / scaleFactor) * pxToMm;
+        const contentHeight = (canvas.height / scaleFactor) * pxToMm;
+
+        // Margin seragam 8 mm di semua sisi
+        const margin = 8;
+        const pdfWidth = contentWidth + (margin * 2);
+        const pdfHeight = contentHeight + (margin * 2);
+
+        const orientation = pdfWidth >= pdfHeight ? 'landscape' : 'portrait';
+
         const pdf = new jsPDF({
-            orientation: 'landscape', // A4 LANDSCAPE SESUAI INSTRUKSI
+            orientation,
             unit: 'mm',
-            format: 'a4'
+            format: [pdfWidth, pdfHeight]
         });
 
-        const pageWidth = 297;  // A4 Landscape Width (mm)
-        const pageHeight = 210; // A4 Landscape Height (mm)
-        const margin = 8;       // Margin 8 mm merata di semua sisi
-
-        const printableWidth = pageWidth - (margin * 2);   // 281 mm
-        const printableHeight = pageHeight - (margin * 2); // 194 mm
-
-        // 5. Hitung rasio seragam (fit-to-page) agar pas tepat 1 halaman A4 Landscape
-        const ratio = Math.min(printableWidth / canvas.width, printableHeight / canvas.height);
-        const finalWidth = canvas.width * ratio;
-        const finalHeight = canvas.height * ratio;
-
-        // 6. Posisikan di tengah kertas secara horizontal dan vertikal
-        const posX = margin + (printableWidth - finalWidth) / 2;
-        const posY = margin + (printableHeight - finalHeight) / 2;
-
-        // 7. Tambahkan ke PDF tepat 1 halaman tanpa loop addPage
-        pdf.addImage(imgData, 'JPEG', posX, posY, finalWidth, finalHeight, undefined, 'FAST');
+        // 5. Tambahkan snapshot dashboard ke dokumen PDF tepat 1 halaman tanpa sisa margin kosong berlebih
+        pdf.addImage(imgData, 'JPEG', margin, margin, contentWidth, contentHeight, undefined, 'FAST');
         pdf.save(filename);
 
     } catch (err) {
@@ -978,25 +977,19 @@ const setDataPaket = () => {
     });
 
     if (progressFisikData.length > 0) {
+        // PARADIGMA KUMULATIF LANGSUNG: Ambil nilai langsung dari laporan terakhir yang terurut
         const lastStatus = progressFisikData[progressFisikData.length - 1];
 
-        let totalActualNominalFisik = 0;
-        let totalPlanPercentageFisik = 0;
-
-        progressFisikData.forEach(progress => {
-            if (progress) {
-                totalActualNominalFisik += Number(progress.actualNominal) || 0;
-                totalPlanPercentageFisik += Number(progress.planPercentage) || 0;
-            }
-        });
-
-        let actualPercentage = kontrakAktif > 0 ? (totalActualNominalFisik / kontrakAktif) * 100 : 0;
+        const actualNominalFisik = Number(lastStatus.actualNominal) || 0;
+        const planPercentageFisik = Number(lastStatus.planPercentage) || 0;
+        const actualPercentageFisik = Number(lastStatus.actualPercentage) || (kontrakAktif > 0 ? (actualNominalFisik / kontrakAktif) * 100 : 0);
+        const deviationFisik = Number(lastStatus.deviationFisik !== undefined && lastStatus.deviationFisik !== null ? lastStatus.deviationFisik : (actualPercentageFisik - planPercentageFisik));
 
         statusProgressFisik.value = {
-            actualNominal: totalActualNominalFisik,
-            planPercentage: totalPlanPercentageFisik,
-            actualPercentage: actualPercentage,
-            deviationFisik: actualPercentage - totalPlanPercentageFisik,
+            actualNominal: actualNominalFisik,
+            planPercentage: planPercentageFisik,
+            actualPercentage: actualPercentageFisik,
+            deviationFisik: deviationFisik,
         };
 
         fotoLastProgress.value.fotoTipikal = lastStatus.fotoTipikal || '';

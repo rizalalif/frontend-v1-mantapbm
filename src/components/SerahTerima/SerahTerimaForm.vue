@@ -181,18 +181,25 @@ const totalActualPercentage = computed(() => {
         }
     }
 
-    // 2. Fallback Kalkulasi On-The-Fly: Total nominal progress fisik dibagi nilai kontrak terkini
+    // 2. Fallback Kalkulasi On-The-Fly: Ambil progress fisik terakhir yang terurut
     const list = props.paket?.progressFisiks;
     if (Array.isArray(list) && list.length > 0) {
-        const totalNominal = list.reduce((sum, item) => sum + (Number(item?.actualNominal ?? item?.nominalProgress) || 0), 0);
+        const sorted = [...list].sort((a, b) => {
+            if (a.monthNumber !== b.monthNumber) return a.monthNumber - b.monthNumber;
+            if (a.mingguKe !== b.mingguKe) return a.mingguKe - b.mingguKe;
+            return new Date(a.tglLaporan || 0) - new Date(b.tglLaporan || 0);
+        });
+        const last = sorted[sorted.length - 1];
+        if (last?.actualPercentage !== undefined && last?.actualPercentage !== null) {
+            return Number(last.actualPercentage);
+        }
+        const totalNominal = Number(last?.actualNominal ?? last?.nominalProgress ?? 0);
         const nilaiKontrakAcuan = Number(props.paket?.nilaiKontrakAdendum ?? props.paket?.nilaiKontrak ?? 0);
 
         if (nilaiKontrakAcuan > 0) {
             return parseFloat(((totalNominal / nilaiKontrakAcuan) * 100).toFixed(2));
         }
-
-        // Fallback akumulasi actualPercentage lama jika nilai kontrak 0
-        return list.reduce((sum, item) => sum + (Number(item?.actualPercentage) || 0), 0);
+        return 0;
     }
 
     // 3. Fallback jika ada totalActualPercentage / totalFisikPercentage di paket

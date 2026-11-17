@@ -442,15 +442,22 @@ const activeSourceGroups = computed(() => {
         return wA - wB;
     });
 
-    let runningActualPercentage = 0;
-    let runningPaguPercentage = 0;
     let runningNominal = 0;
 
     const items = sortedList.map(item => {
         const nominal = Number(item?.actualFinance ?? item?.nominalProgress ?? 0);
         runningNominal += nominal;
-        runningActualPercentage += Number(item?.actualPercentage ?? 0);
-        runningPaguPercentage += Number(item?.paguPercentage ?? 0);
+
+        const nilaiKontrak = Number(props.paket?.nilaiKontrak ?? 0);
+        const nilaiPagu = Number(groupedMeta.value.nilaiPagu || props.paket?.nilaiPagu || 0);
+
+        const weeklyKontrak = (item?.actualPercentage !== null && item?.actualPercentage !== undefined)
+            ? Number(item.actualPercentage)
+            : (nilaiKontrak > 0 ? (nominal / nilaiKontrak) * 100 : 0);
+
+        const weeklyPagu = (item?.paguPercentage !== null && item?.paguPercentage !== undefined)
+            ? Number(item.paguPercentage)
+            : (nilaiPagu > 0 ? (nominal / nilaiPagu) * 100 : 0);
 
         return {
             id: item?.id,
@@ -461,8 +468,8 @@ const activeSourceGroups = computed(() => {
             mingguKe: Number(item?.mingguKe) || 1,
             nominalProgress: nominal,
             nominalKumulatif: runningNominal,
-            persentaseKontrak: parseFloat(runningActualPercentage.toFixed(2)),
-            persentasePagu: parseFloat(runningPaguPercentage.toFixed(2)),
+            persentaseKontrak: parseFloat(weeklyKontrak.toFixed(2)),
+            persentasePagu: parseFloat(weeklyPagu.toFixed(2)),
             canDelete: true,
             canEdit: true,
             keterangan: item?.keterangan,
@@ -508,11 +515,17 @@ const flattenedGroupedItems = computed(() => {
             return;
         }
 
-        // Ringkasan untuk baris groupheader
+        // Ringkasan untuk baris groupheader: akumulasi nominal & persentase grup terhadap acuan fase & pagu
         const summaryNominal = filteredItems.reduce((acc, it) => acc + (Number(it.nominalProgress) || 0), 0);
-        const lastVisible = filteredItems[filteredItems.length - 1];
-        const summaryKontrak = Number(lastVisible?.persentaseKontrak ?? 0);
-        const summaryPagu = Number(lastVisible?.persentasePagu ?? 0);
+        const nilaiKontrakAcuan = Number(group.nilaiKontrakAcuan ?? 0);
+        const nilaiPagu = Number(groupedMeta.value.nilaiPagu ?? 0);
+
+        const summaryKontrak = nilaiKontrakAcuan > 0
+            ? parseFloat(((summaryNominal / nilaiKontrakAcuan) * 100).toFixed(2))
+            : 0;
+        const summaryPagu = nilaiPagu > 0
+            ? parseFloat(((summaryNominal / nilaiPagu) * 100).toFixed(2))
+            : 0;
         const isActiveGroup = groupedMeta.value.adendumAktifId
             ? group.riwayatAdendumId === groupedMeta.value.adendumAktifId
             : group.faseKe === 0;
