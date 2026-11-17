@@ -19,7 +19,7 @@ const getStatusBadgeClass = (status) => {
     <div
         class="bg-white rounded-[24px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 h-full flex flex-col lg:col-span-1 overflow-y-auto custom-scrollbar-x">
         <div class="flex items-center justify-between mb-6">
-            <h3 class="font-bold text-sm text-blue-950 uppercase tracking-wide">Paket Perlu Perhatian</h3>
+            <h3 class="font-bold text-sm text-blue-950 uppercase tracking-wide">Early Warning System</h3>
         </div>
 
         <div class="flex-1 flex flex-col gap-5 overflow-y-auto pr-2 ">
