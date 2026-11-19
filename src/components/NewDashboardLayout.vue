@@ -247,15 +247,18 @@ onUnmounted(() => {
                                 <!-- Logo Bina Marga Bundar -->
                                 <div class="w-8 h-8 overflow-hidden rounded-full bg-white shrink-0 flex items-center justify-center p-0.5 shadow-sm group-hover:scale-105 transition-transform"
                                     title="Teras Jalan - Bina Marga">
-                                    <img :src="logoTerasJalan" alt="Logo Bina Marga" class="w-full h-full object-cover rounded-full" />
+                                    <img :src="logoTerasJalan" alt="Logo Bina Marga"
+                                        class="w-full h-full object-cover rounded-full" />
                                 </div>
-                                <span v-if="!isSidebarMinimized" class="truncate font-semibold tracking-wider text-xs uppercase">
+                                <span v-if="!isSidebarMinimized"
+                                    class="truncate font-semibold tracking-wider text-xs uppercase">
                                     {{ page.name }}
                                 </span>
                             </div>
 
                             <!-- Suffix Icon (Ikon Eksternal di Sisi Kanan) -->
-                            <svg v-if="!isSidebarMinimized" class="w-4 h-4 shrink-0 text-amber-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform ml-2"
+                            <svg v-if="!isSidebarMinimized"
+                                class="w-4 h-4 shrink-0 text-amber-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform ml-2"
                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" :d="page.icon">
                                 </path>
@@ -311,7 +314,7 @@ onUnmounted(() => {
                                 d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                         <span v-if="!isSidebarMinimized">{{ isGeneratingPdf ? 'Menyiapkan PDF...' : 'Export PDF'
-                            }}</span>
+                        }}</span>
                     </button>
                     <!-- <Select :showClear="auth.userRole.value === 'admin'" optionLabel="name" optionValue="id"
                         placeholder="Pilih PIC..." filter filterPlaceholder="Cari nama PIC..." :pt="{
@@ -328,8 +331,7 @@ onUnmounted(() => {
                 <div :class="isSidebarMinimized ? 'flex-col gap-3' : 'flex-row gap-4'"
                     class="flex items-center justify-center transition-all">
                     <!-- Logo Pemprov Kaltim -->
-                    <img :src="logoKaltim" alt="Logo Pemprov Kaltim"
-                        :class="isSidebarMinimized ? 'h-8' : 'h-20'"
+                    <img :src="logoKaltim" alt="Logo Pemprov Kaltim" :class="isSidebarMinimized ? 'h-8' : 'h-20'"
                         class="w-auto object-contain hover:scale-105 transition-transform drop-shadow"
                         title="Pemerintah Provinsi Kalimantan Timur" />
 
@@ -343,12 +345,12 @@ onUnmounted(() => {
                 </div>
 
                 <!-- Daftar Akun Instagram Resmi -->
-                <div :class="isSidebarMinimized ? 'justify-center items-center px-0' : 'items-start px-2'"
+                <div :class="isSidebarMinimized ? 'justify-center items-center px-0' : 'items-start'"
                     class="flex gap-2 transition-all">
                     <!-- Akun 1: @dpupr_kaltim -->
                     <a href="https://www.instagram.com/dpupr_kaltim" target="_blank" rel="noopener noreferrer"
                         :title="isSidebarMinimized ? '@dpupr_kaltim' : ''"
-                        class="flex items-center gap-2.5 text-slate-300 hover:text-white transition-colors group text-xs font-medium">
+                        class="flex items-center gap-1 text-slate-300 hover:text-white transition-colors group text-[11px] font-medium">
                         <!-- Icon Instagram Berwarna Merah -->
                         <svg class="w-4 h-4 text-red-500 group-hover:scale-110 transition-transform shrink-0"
                             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -365,7 +367,7 @@ onUnmounted(() => {
                     <!-- Akun 2: @binamargakaltim -->
                     <a href="https://www.instagram.com/binamargakaltim" target="_blank" rel="noopener noreferrer"
                         :title="isSidebarMinimized ? '@binamargakaltim' : ''"
-                        class="flex items-center gap-2.5 text-slate-300 hover:text-white transition-colors group text-xs font-medium">
+                        class="flex items-center gap-1 text-slate-300 hover:text-white transition-colors group text-[11px] font-medium">
                         <!-- Icon Instagram Berwarna Merah -->
                         <svg class="w-4 h-4 text-red-500 group-hover:scale-110 transition-transform shrink-0"
                             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -435,7 +437,7 @@ onUnmounted(() => {
                             class="w-10 h-10 rounded-full bg-blue-900 text-white flex items-center justify-center font-bold text-sm">
                             {{ userInitials }}</div>
                         <span v-if="auth.isLoggedIn" class="text-sm font-bold text-blue-950">{{ auth.state.user.fullName
-                            }}</span>
+                        }}</span>
                     </div>
                     <div v-if="isMobile"
                         class="flex items-center gap-3 lg:bg-slate-50 p-1.5 pr-4 rounded-full lg:border lg:border-slate-100 cursor-pointer">
@@ -444,7 +446,7 @@ onUnmounted(() => {
                             {{ userInitials }}</div>
                         <span v-if="auth.isLoggedIn && !isMobile" class="text-sm font-bold text-blue-950">{{
                             auth.state.user.fullName
-                            }}</span>
+                        }}</span>
                     </div>
                     <div v-if="isDropdownOpen"
                         class="absolute right-10 top-17 mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
@@ -458,7 +460,7 @@ onUnmounted(() => {
 
                             <div class="px-4 py-2 border-b border-slate-100">
                                 <p class="text-sm font-bold text-slate-800">{{ auth.state.user?.fullName || 'User Admin'
-                                }}
+                                    }}
                                 </p>
                                 <p class="text-xs text-slate-500 capitalize">{{ auth.userRole }}</p>
                             </div>
@@ -467,12 +469,16 @@ onUnmounted(() => {
                                     rel="noopener noreferrer"
                                     class="flex items-center justify-between px-4 py-3.5 rounded-xl transition-all border border-slate-200 bg-amber-50/50 hover:bg-amber-100/50 text-amber-700 hover:text-amber-800 group">
                                     <div class="flex items-center gap-3 min-w-0">
-                                        <div class="w-6 h-6 rounded-full overflow-hidden bg-white shrink-0 flex items-center justify-center p-0.5 shadow-sm border border-slate-100">
-                                            <img :src="logoBinaMarga" alt="Logo Bina Marga" class="w-full h-full object-cover rounded-full" />
+                                        <div
+                                            class="w-6 h-6 rounded-full overflow-hidden bg-white shrink-0 flex items-center justify-center p-0.5 shadow-sm border border-slate-100">
+                                            <img :src="logoBinaMarga" alt="Logo Bina Marga"
+                                                class="w-full h-full object-cover rounded-full" />
                                         </div>
-                                        <span class="font-semibold text-xs uppercase tracking-wider truncate">{{ page.name }}</span>
+                                        <span class="font-semibold text-xs uppercase tracking-wider truncate">{{
+                                            page.name }}</span>
                                     </div>
-                                    <svg class="w-4 h-4 shrink-0 text-amber-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg class="w-4 h-4 shrink-0 text-amber-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"
+                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                             :d="page.icon"></path>
                                     </svg>
