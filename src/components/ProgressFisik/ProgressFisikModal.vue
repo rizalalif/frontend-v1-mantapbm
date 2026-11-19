@@ -483,7 +483,7 @@ const submitForm = async () => {
                                     <label
                                         class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Minggu
                                         Ke-</label>
-                                    <input type="number" min="1" max="12" v-model="formProgress.mingguKe" :disabled="isReadOnly"
+                                    <input type="number" min="1" max="40" v-model="formProgress.mingguKe" :disabled="isReadOnly"
                                         class="w-full bg-slate-50 text-sm text-center font-bold text-blue-950 rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-orange-500 focus:outline-none disabled:bg-slate-100/80 disabled:text-slate-600 disabled:cursor-not-allowed">
                                 </div>
 
